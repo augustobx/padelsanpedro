@@ -8,7 +8,7 @@ import { logoutAdmin } from '@/actions/auth';
 import { 
   LayoutDashboard, Calendar, MapPin, CreditCard, Settings, Menu, X, LogOut, 
   Trophy, ClipboardList, CalendarDays, Users, BarChart3, BadgeCheck, ExternalLink,
-  Sparkles, Coffee, DollarSign, FileText, MessageSquare
+  Sparkles, Coffee, DollarSign, FileText, MessageSquare, Shield
 } from 'lucide-react';
 
 interface NavSection {
@@ -64,12 +64,14 @@ export default function AdminSidebar({
   enabledFeatures = [],
   clubName = 'OnlyPadel',
   clubLogo = '',
-  sportEmoji = '🎾'
+  sportEmoji = '🎾',
+  isSuperAdmin = false,
 }: { 
   enabledFeatures?: string[];
   clubName?: string;
   clubLogo?: string;
   sportEmoji?: string;
+  isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -106,6 +108,14 @@ export default function AdminSidebar({
         </button>
       </div>
 
+      {/* SUPERADMIN BAR MOBILE */}
+      {isSuperAdmin && (
+        <div className="md:hidden bg-indigo-950/90 px-4 py-2 border-b border-indigo-800/80 flex items-center justify-between text-xs font-bold text-indigo-300">
+          <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-indigo-400" /> Modo SuperAdmin</span>
+          <Link href="/superadmin/tenants" className="text-white underline hover:text-indigo-200">Volver a Clubes</Link>
+        </div>
+      )}
+
       {/* OVERLAY MOBILE */}
       {isOpen && (
         <div
@@ -120,6 +130,19 @@ export default function AdminSidebar({
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
+        {/* Banner Modo SuperAdmin Desktop */}
+        {isSuperAdmin && (
+          <div className="p-2.5 bg-indigo-950/70 border-b border-indigo-800/70">
+            <Link
+              href="/superadmin/tenants"
+              className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-950/50"
+            >
+              <Shield className="w-3.5 h-3.5 text-indigo-200" />
+              Volver al SuperAdmin
+            </Link>
+          </div>
+        )}
+
         {/* Header / Logo PC */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800/80 bg-slate-900/40">
           {hasLogoImage ? (

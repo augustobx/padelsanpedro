@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
+import { createHash } from 'node:crypto';
+import { headers, cookies } from 'next/headers';
 import { platformPrisma } from '@/lib/prisma-core';
 import { syncTenantMembership } from '@/lib/membership';
 
@@ -142,6 +143,30 @@ export async function resolveTenantContext(): Promise<TenantContext> {
     } catch {
       // Si el slug de la cookie no es válido, continuar con la resolución por hostname
     }
+  }
+
+  // Verificar si hay una sesión de admin activa en cookie
+  try {
+    const cookieStore = await cookies();
+    const adminToken = cookieStore.get('onlypadel_admin_session')?.value;
+    if (adminToken) {
+      const hash = createHash('sha256').update(adminToken).digest('hex');
+      const session = await platformPrisma.adminSession.findUnique({
+        where: { tokenHash: hash },
+        include: { tenant: true },
+      });
+      if (session?.tenant && session.tenant.status === 'ACTIVE') {
+        return {
+          id: session.tenant.id,
+          slug: session.tenant.slug,
+          name: session.tenant.name,
+          hostname: `${session.tenant.slug}.${BASE_DOMAIN}`,
+          timezone: session.tenant.timezone,
+        };
+      }
+    }
+  } catch {
+    // Si falla o no hay sesión, continuar con la resolución por hostname
   }
 
   const hostname = await getRequestHostname();

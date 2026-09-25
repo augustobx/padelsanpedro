@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Building2, CheckCircle2, CreditCard, Globe, Layers, Shield } from 'lucide-react';
+import { ArrowLeft, Building2, CheckCircle2, CreditCard, ExternalLink, Globe, Layers, Shield } from 'lucide-react';
 import { addTenantDomain, setFeatureOverride, verifyTenantDomain } from '@/actions/platform';
-import { registerSaasPayment, updateTenantSuperAdmin } from '@/actions/superadmin';
+import { impersonateTenantAdmin, registerSaasPayment, updateTenantSuperAdmin } from '@/actions/superadmin';
 import { FEATURE_KEYS } from '@/lib/features';
 import { getPlatformSession } from '@/lib/platform-auth';
 import { platformPrisma } from '@/lib/prisma-core';
@@ -42,8 +42,41 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     <div className="flex items-center justify-between"><Link href="/superadmin/tenants" className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white"><ArrowLeft className="w-4 h-4" />Volver a Clubes</Link></div>
 
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-      <div className="flex items-center gap-4"><div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400"><Building2 className="w-7 h-7" /></div><div><div className="flex items-center gap-3"><h1 className="text-xl font-bold text-white">{tenant.name}</h1><span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${tenant.status==='ACTIVE'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20':'bg-red-500/10 text-red-400 border-red-500/20'}`}>{tenant.status==='ACTIVE'?'Activo':tenant.status==='SUSPENDED'?'Suspendido':'Archivado'}</span></div><div className="text-xs text-indigo-400 font-mono mt-1 flex items-center gap-2"><span>{primary}</span></div></div></div>
-      <div className="flex items-center gap-4 text-xs text-slate-300"><Counter label="Usuarios" value={tenant._count.users}/><Counter label="Canchas" value={tenant._count.courts}/><Counter label="Reservas" value={tenant._count.bookings}/></div>
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <Building2 className="w-7 h-7" />
+        </div>
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-white">{tenant.name}</h1>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${tenant.status==='ACTIVE'?'bg-emerald-500/10 text-emerald-400 border-emerald-500/20':'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+              {tenant.status==='ACTIVE'?'Activo':tenant.status==='SUSPENDED'?'Suspendido':'Archivado'}
+            </span>
+          </div>
+          <div className="text-xs text-indigo-400 font-mono mt-1 flex items-center gap-2">
+            <span>{primary}</span>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-4 text-xs text-slate-300">
+          <Counter label="Usuarios" value={tenant._count.users}/>
+          <Counter label="Canchas" value={tenant._count.courts}/>
+          <Counter label="Reservas" value={tenant._count.bookings}/>
+        </div>
+        {tenant.status === 'ACTIVE' && (
+          <form action={impersonateTenantAdmin}>
+            <input type="hidden" name="tenantId" value={tenant.id} />
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 transition-all active:scale-95"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Acceder al Panel del Club
+            </button>
+          </form>
+        )}
+      </div>
     </div>
 
     <form action={updateTenantSuperAdmin} className="space-y-6"><input type="hidden" name="tenantId" value={tenant.id}/>

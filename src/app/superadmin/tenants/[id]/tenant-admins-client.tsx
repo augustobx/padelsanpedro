@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { 
   Users, UserPlus, KeyRound, ShieldCheck, ShieldAlert, 
-  CheckCircle2, XCircle, Trash2, Eye, EyeOff, Loader2, X, Lock
+  CheckCircle2, XCircle, Trash2, Eye, EyeOff, Loader2, X, Lock, LogIn
 } from 'lucide-react';
 import { 
   createTenantAdminUser, 
   resetTenantAdminPassword, 
   toggleTenantAdminStatus, 
-  deleteTenantAdminUser 
+  deleteTenantAdminUser,
+  impersonateTenantAdmin
 } from '@/actions/superadmin';
 
 export interface TenantAdminUser {
@@ -207,10 +208,23 @@ export function TenantAdminsClient({ tenantId, tenantName, admins }: TenantAdmin
                     {new Date(admin.createdAt).toLocaleDateString('es-AR')}
                   </td>
                   <td className="py-3 px-4 text-right space-x-1">
+                    <form action={impersonateTenantAdmin} className="inline-block">
+                      <input type="hidden" name="tenantId" value={tenantId} />
+                      <input type="hidden" name="userId" value={admin.id} />
+                      <button
+                        type="submit"
+                        disabled={!admin.isActive}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 font-medium text-[11px] transition-colors inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed align-middle"
+                        title="Ingresar al panel de control de este club como este administrador"
+                      >
+                        <LogIn className="w-3 h-3" />
+                        Acceder
+                      </button>
+                    </form>
                     <button
                       type="button"
                       onClick={() => { setResettingUser(admin); setMessage(null); }}
-                      className="px-2.5 py-1 rounded-lg bg-slate-850 hover:bg-slate-800 text-amber-300 border border-slate-700 font-medium text-[11px] transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-slate-850 hover:bg-slate-800 text-amber-300 border border-slate-700 font-medium text-[11px] transition-colors align-middle"
                       title="Cambiar Contraseña"
                     >
                       Cambiar Clave
@@ -219,7 +233,7 @@ export function TenantAdminsClient({ tenantId, tenantName, admins }: TenantAdmin
                       type="button"
                       onClick={() => handleToggleStatus(admin)}
                       disabled={loading}
-                      className={`px-2 py-1 rounded-lg border font-medium text-[11px] transition-colors ${
+                      className={`px-2 py-1 rounded-lg border font-medium text-[11px] transition-colors align-middle ${
                         admin.isActive 
                           ? 'bg-slate-850 hover:bg-slate-800 text-slate-400 border-slate-700' 
                           : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/20'

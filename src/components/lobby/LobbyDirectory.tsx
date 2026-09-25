@@ -15,7 +15,8 @@ import {
   Layers,
   ShieldCheck,
   Flame,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import type { PublicClubCard } from '@/actions/clubs';
 
@@ -378,6 +379,20 @@ export default function LobbyDirectory({
             Ver Convocatorias
           </Link>
         </section>
+
+        {/* Footer */}
+        <footer className="pt-8 pb-16 text-center text-xs text-slate-500 space-y-2 border-t border-slate-900/80">
+          <p>© 2026 PadelSanPedro · La red de canchas de San Pedro</p>
+          <div className="flex items-center justify-center gap-4 text-[11px]">
+            <Link href="/login" className="text-slate-400 hover:text-emerald-400 font-semibold transition-colors flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Acceso Clubes
+            </Link>
+            <span>·</span>
+            <Link href="/superadmin/login" className="text-slate-500 hover:text-slate-300 transition-colors">
+              Plataforma
+            </Link>
+          </div>
+        </footer>
       </main>
 
       {/* Bottom Navigation Bar for Mobile (PWA App Experience) */}

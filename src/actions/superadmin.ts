@@ -1,6 +1,7 @@
 'use server';
 
 import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -8,6 +9,7 @@ import { platformPrisma } from '@/lib/prisma-core';
 import { clearFeatureCache, FEATURE_KEYS } from '@/lib/features';
 import { clearPlatformSession, requirePlatformAdmin } from '@/lib/platform-auth';
 import { clearTenantResolutionCache, normalizeHostname } from '@/lib/tenant-context';
+import { createAdminSession } from '@/lib/admin-auth';
 
 const refresh = () => {
   revalidatePath('/superadmin');
@@ -333,4 +335,65 @@ export async function deleteTenantAdminUser(formData: FormData) {
   });
 
   revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+export async function impersonateTenantAdmin(formData: FormData) {
+  const actor = await requirePlatformAdmin();
+  const tenantId = z.string().uuid().parse(formData.get('tenantId'));
+  const userIdRaw = formData.get('userId') ? String(formData.get('userId')).trim() : null;
+  const userId = userIdRaw ? z.string().uuid().parse(userIdRaw) : null;
+
+  const tenant = await platformPrisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: {
+      users: {
+        where: { role: 'ADMIN', isActive: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  });
+
+  if (!tenant || tenant.status !== 'ACTIVE') {
+    throw new Error('El club no se encuentra activo o no existe.');
+  }
+
+  let adminUser = userId 
+    ? tenant.users.find(u => u.id === userId) 
+    : tenant.users[0];
+
+  if (!adminUser) {
+    const defaultPassword = await bcrypt.hash('SanPedro.2026!', 12);
+    adminUser = await platformPrisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        name: `Admin ${tenant.name}`,
+        email: `admin.${tenant.slug}@padelsanpedro.ar`,
+        password: defaultPassword,
+        role: 'ADMIN',
+        isActive: true,
+      },
+    });
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.set('padelsanpedro_active_club', tenant.slug, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+    sameSite: 'lax',
+  });
+
+  await createAdminSession(adminUser.id, tenant.id);
+
+  await platformPrisma.platformAuditLog.create({
+    data: {
+      actorId: actor.userId,
+      tenantId: tenant.id,
+      action: 'TENANT_ADMIN_IMPERSONATED',
+      entityType: 'User',
+      entityId: adminUser.id,
+      metadata: { tenantSlug: tenant.slug, adminEmail: adminUser.email },
+    },
+  });
+
+  redirect('/admin/dashboard');
 }

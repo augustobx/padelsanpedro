@@ -1,5 +1,6 @@
 import AdminSidebar from "@/components/AdminSidebar";
 import { getAdminSession } from "@/lib/admin-auth";
+import { getPlatformSession } from "@/lib/platform-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getReadableForeground, getThemeColors } from "@/lib/color";
@@ -10,7 +11,10 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getAdminSession();
+  const [session, platformSession] = await Promise.all([
+    getAdminSession(),
+    getPlatformSession()
+  ]);
   if (!session) redirect('/login');
   
   const [settings, logoSetting] = await Promise.all([
@@ -46,6 +50,7 @@ export default async function AdminLayout({
         clubName={clubName}
         clubLogo={clubLogo}
         sportEmoji={sportEmoji}
+        isSuperAdmin={Boolean(platformSession)}
       />
 
       <main className="flex-1 flex flex-col min-h-0 md:h-screen md:overflow-hidden">
