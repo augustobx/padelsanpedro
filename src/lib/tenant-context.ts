@@ -73,7 +73,6 @@ export async function findTenant(hostname: string): Promise<TenantContext | null
   return toContext(tenant, hostname);
 }
 
-import { cookies } from 'next/headers';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 export const tenantStorage = new AsyncLocalStorage<string>();
