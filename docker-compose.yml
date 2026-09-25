@@ -1,9 +1,9 @@
-name: onlypadel
+name: sanpedropadel
 
 services:
   db:
     image: mariadb:10.11.19
-    container_name: onlypadel-db
+    container_name: sanpedropadel-db
     restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
@@ -60,7 +60,7 @@ services:
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
         NEXT_PUBLIC_VAPID_SUBJECT: ${NEXT_PUBLIC_VAPID_SUBJECT:-}
         NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required}
-    container_name: onlypadel-web
+    container_name: sanpedropadel-web
     restart: unless-stopped
     init: true
     depends_on:
@@ -103,11 +103,12 @@ services:
 
 volumes:
   db_data:
-    name: onlypadel-db-data
+    name: sanpedropadel-db-data
 
 networks:
   internal:
-    name: onlypadel-internal
+    name: sanpedropadel-internal
     internal: true
   proxy:
     external: true
+

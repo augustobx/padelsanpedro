@@ -2,12 +2,12 @@ import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
-const email = (process.env.ONLYPADEL_SUPERADMIN_EMAIL || '').trim().toLowerCase();
-const password = process.env.ONLYPADEL_SUPERADMIN_PASSWORD || '';
-const name = (process.env.ONLYPADEL_SUPERADMIN_NAME || 'NanoLabs').trim();
+const email = (process.env.SANPEDROPADEL_SUPERADMIN_EMAIL || process.env.ONLYPADEL_SUPERADMIN_EMAIL || '').trim().toLowerCase();
+const password = process.env.SANPEDROPADEL_SUPERADMIN_PASSWORD || process.env.ONLYPADEL_SUPERADMIN_PASSWORD || '';
+const name = (process.env.SANPEDROPADEL_SUPERADMIN_NAME || process.env.ONLYPADEL_SUPERADMIN_NAME || 'PadelSanPedro Admin').trim();
 
 if (!email || password.length < 12) {
-  throw new Error('ONLYPADEL_SUPERADMIN_EMAIL and a password of at least 12 characters are required');
+  throw new Error('Superadmin email and a password of at least 12 characters are required');
 }
 
 const connectionString = (process.env.DATABASE_URL || '').replace('mysql://', 'mariadb://');
