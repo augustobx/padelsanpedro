@@ -377,4 +377,3 @@ export async function cancelAdminBooking(bookingId: string) {
     }
 }
 
-export { releaseFixedBookingForDate, restoreFixedBookingForDate } from '@/actions/fixed-bookings';

@@ -12,9 +12,11 @@ import {
   Layers, Eye, Filter, Sparkles, RefreshCw, CalendarDays, LayoutGrid, Zap, RotateCcw
 } from 'lucide-react';
 import { 
-  getAdminCalendarData, getAdminCalendarWeekData, createAdminBooking, cancelAdminBooking,
-  releaseFixedBookingForDate, restoreFixedBookingForDate
+  getAdminCalendarData, getAdminCalendarWeekData, createAdminBooking, cancelAdminBooking
 } from '@/actions/admin-calendar';
+import { 
+  releaseFixedBookingForDate, restoreFixedBookingForDate
+} from '@/actions/fixed-bookings';
 import { getMonthlyStats } from '@/actions/monthly-calendar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
