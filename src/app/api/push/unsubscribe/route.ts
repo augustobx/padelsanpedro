@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { platformPrisma } from '@/lib/prisma-core';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
@@ -10,11 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta endpoint' }, { status: 400 });
     }
 
-    // Borramos cualquier suscripción que coincida con ese endpoint
-    await prisma.pushSubscription.deleteMany({
-      where: {
-        endpoint: endpoint
-      }
+    await platformPrisma.pushSubscription.deleteMany({
+      where: { endpoint }
     });
 
     return NextResponse.json({ success: true });

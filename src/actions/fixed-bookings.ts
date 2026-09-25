@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { addWeeks } from 'date-fns';
 import { requireAdmin } from '@/lib/admin-auth';
+import { broadcastLiberatedSlotPush } from '@/lib/push';
 
 export async function getFixedBookings() {
     try {
@@ -224,6 +225,26 @@ export async function releaseFixedBookingForDate(data: {
         revalidatePath('/admin/calendar');
         revalidatePath('/admin/abonos');
         revalidatePath('/');
+
+        // Disparar Web Push a todos los jugadores avisando del turno liberado
+        try {
+            const court = await prisma.court.findUnique({
+                where: { id: data.courtId },
+                include: { tenant: true }
+            });
+            if (court) {
+                broadcastLiberatedSlotPush({
+                    courtName: court.name,
+                    clubName: court.tenant?.name || 'Club de San Pedro',
+                    dateStr: data.dateStr,
+                    timeStr: data.startTimeStr,
+                    url: `/${court.tenant?.slug || ''}`,
+                }).catch((err) => console.warn('Could not send liberated slot push:', err));
+            }
+        } catch (e) {
+            console.warn('Error queuing liberated slot push:', e);
+        }
+
         return { success: true, message: 'Turno liberado con éxito para esta fecha.' };
     } catch (error: any) {
         console.error('Error in releaseFixedBookingForDate:', error);

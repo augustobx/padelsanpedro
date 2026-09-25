@@ -5,47 +5,83 @@ import { prisma } from '@/lib/prisma'
 import { isPlatformRequest } from '@/lib/tenant-context'
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  if (await isPlatformRequest()) {
-    return {
-      name: 'PadelSanPedro',
-      short_name: 'PadelSanPedro',
-      description: 'Reservas de canchas, comunidad y torneos de pádel en San Pedro',
-      start_url: '/',
-      display: 'standalone',
-      background_color: '#020617',
-      theme_color: '#10b981',
-      orientation: 'portrait-primary',
-      icons: [{ src: '/favicon.ico', sizes: 'any', type: 'image/x-icon' }],
-    }
-  }
-  const settings = await prisma.systemSetting.findFirst({ where: { id: 1 } })
-  const appName = settings?.clubName || 'PadelSanPedro'
+  const isPlatform = await isPlatformRequest()
+  const settings = !isPlatform ? await prisma.systemSetting.findFirst({ where: { id: 1 } }) : null
+  const appName = isPlatform ? 'Padel San Pedro' : (settings?.clubName || 'Padel San Pedro')
+  const description = isPlatform
+    ? 'Todas las canchas, reservas en tiempo real, comunidad y ranking de pádel en San Pedro'
+    : `Reserva tu cancha en ${appName} a través de Padel San Pedro`
+
+  const icons: MetadataRoute.Manifest['icons'] = [
+    {
+      src: '/icons/icon-192x192.png',
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: '/icons/icon-512x512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: '/icons/icon-maskable-512x512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+    {
+      src: '/icons/apple-touch-icon.png',
+      sizes: '180x180',
+      type: 'image/png',
+    },
+  ]
+
+  const shortcuts = [
+    {
+      name: 'Ver Canchas & Turnos',
+      short_name: 'Turnos',
+      description: 'Lobby multicancha con turnos en tiempo real',
+      url: '/',
+      icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+    },
+    {
+      name: 'Comunidad San Pedro',
+      short_name: 'Comunidad',
+      description: 'Muro social, avisos de partidos y charlas',
+      url: '/comunidad',
+      icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+    },
+    {
+      name: 'Partidos Abiertos',
+      short_name: 'Partidos',
+      description: 'Buscá jugadores o sumate a un partido',
+      url: '/comunidad/partidos',
+      icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+    },
+    {
+      name: 'Mis Reservas',
+      short_name: 'Mis Turnos',
+      description: 'Consultar tus reservas activas',
+      url: '/mis-turnos',
+      icons: [{ src: '/icons/icon-192x192.png', sizes: '192x192' }],
+    },
+  ]
 
   return {
-    name: `${appName} — PadelSanPedro`,
+    name: isPlatform ? 'Padel San Pedro — Hub Multicancha' : `${appName} — Padel San Pedro`,
     short_name: appName,
-    description: `Reserva tu cancha en ${appName} a través de PadelSanPedro`,
+    description,
     start_url: '/',
+    scope: '/',
     display: 'standalone',
-    background_color: settings?.theme === 'dark' ? '#020617' : '#f8fafc',
-    theme_color: settings?.primaryColor || '#10b981',
+    display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
+    background_color: '#020617',
+    theme_color: '#020617',
     orientation: 'portrait-primary',
-    icons: [
-      {
-        src: '/favicon.ico',
-        sizes: 'any',
-        type: 'image/x-icon',
-      },
-      {
-        src: '/globe_192.png',
-        sizes: '192x192',
-        type: 'image/png',
-      },
-      {
-        src: '/globe_512.png',
-        sizes: '512x512',
-        type: 'image/png',
-      }
-    ],
+    categories: ['sports', 'social', 'lifestyle'],
+    icons,
+    shortcuts,
   }
 }

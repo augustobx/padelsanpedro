@@ -21,6 +21,7 @@ import {
   Zap,
 } from 'lucide-react';
 import type { PublicClubCard, HubHighlights } from '@/actions/clubs';
+import PwaNotificationBell from '@/components/pwa/PwaNotificationBell';
 
 interface LobbyDirectoryProps {
   clubs: PublicClubCard[];
@@ -93,7 +94,8 @@ export default function LobbyDirectory({
             </div>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
+            <PwaNotificationBell />
             {session ? (
               <Link
                 href="/perfil"
@@ -231,6 +233,14 @@ export default function LobbyDirectory({
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-4 pt-3.5 border-t border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <span className="text-amber-200/90 font-medium flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                ¿Querés que tu celular te avise al instante cuando alguien libere un turno?
+              </span>
+              <PwaNotificationBell />
             </div>
           </section>
         )}
