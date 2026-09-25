@@ -73,13 +73,27 @@ export async function findTenant(hostname: string): Promise<TenantContext | null
 }
 
 import { cookies } from 'next/headers';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+export const tenantStorage = new AsyncLocalStorage<string>();
 
 export async function getSelectedClubSlug(): Promise<string | null> {
+  const storeSlug = tenantStorage.getStore();
+  if (storeSlug) {
+    return storeSlug.trim();
+  }
+
   try {
     const headerStore = await headers();
     const headerClub = headerStore.get('x-padelsanpedro-club');
     if (headerClub) {
       return headerClub.trim();
+    }
+
+    const nextUrl = headerStore.get('next-url') || headerStore.get('x-invoke-path') || '';
+    if (nextUrl.includes('/club/')) {
+      const match = nextUrl.match(/\/club\/([^/?#]+)/);
+      if (match && match[1]) return match[1].trim();
     }
 
     const cookieStore = await cookies();

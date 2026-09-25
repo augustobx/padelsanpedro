@@ -12,7 +12,7 @@ import { cookies } from "next/headers";
 import UserWelcomeSplash from "@/components/UserWelcomeSplash";
 import { getUserSession } from "@/actions/user-auth";
 import { getReadableForeground, getThemeColors } from "@/lib/color";
-import { resolveTenantBySlug, TenantResolutionError } from "@/lib/tenant-context";
+import { resolveTenantBySlug, TenantResolutionError, tenantStorage } from "@/lib/tenant-context";
 import { notFound, redirect } from "next/navigation";
 import { getLatestCommunityPosts } from "@/actions/community-feed";
 import { getUnreadMessagesCount } from "@/actions/community-chat";
@@ -26,14 +26,15 @@ interface ClubPageProps {
 export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params;
 
-  try {
-    await resolveTenantBySlug(slug);
-  } catch (error) {
-    if (error instanceof TenantResolutionError && error.message === 'TENANT_SUSPENDED') {
-      redirect('/suspendido');
+  return tenantStorage.run(slug, async () => {
+    try {
+      await resolveTenantBySlug(slug);
+    } catch (error) {
+      if (error instanceof TenantResolutionError && error.message === 'TENANT_SUSPENDED') {
+        redirect('/suspendido');
+      }
+      notFound();
     }
-    notFound();
-  }
 
   const pubReq = await getPublicTournaments();
   const activeTournament = pubReq.data?.find((t) => t.status !== 'COMPLETED');
@@ -167,4 +168,5 @@ export default async function ClubPage({ params }: ClubPageProps) {
       </div>
     </div>
   );
+  });
 }

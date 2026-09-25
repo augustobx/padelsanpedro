@@ -81,6 +81,24 @@ async function seed() {
 
       console.log(`Tenant ${tenant.name} (${tenant.slug}) ready: ${tenant.id}`);
 
+      const enterprisePlan = await prisma.plan.findUnique({ where: { code: 'ENTERPRISE' } });
+      if (enterprisePlan) {
+        await prisma.tenantSubscription.upsert({
+          where: { id: `sub-${tenant.slug}` },
+          create: {
+            id: `sub-${tenant.slug}`,
+            tenantId: tenant.id,
+            planId: enterprisePlan.id,
+            status: 'ACTIVE',
+            startsAt: new Date(),
+          },
+          update: {
+            status: 'ACTIVE',
+            planId: enterprisePlan.id,
+          },
+        });
+      }
+
       await prisma.systemSetting.upsert({
         where: { tenantId: tenant.id },
         create: {
