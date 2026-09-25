@@ -2,7 +2,28 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export default function proxy(request: NextRequest) {
-  // Solo interceptamos rutas de /admin
+  // Manejo de club activo para PadelSanPedro
+  if (request.nextUrl.pathname.startsWith('/club/')) {
+    const parts = request.nextUrl.pathname.split('/');
+    const slug = parts[2];
+    if (slug) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-padelsanpedro-club', slug);
+      const response = NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+      response.cookies.set('padelsanpedro_active_club', slug, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+      });
+      return response;
+    }
+  }
+
+  // Interceptamos rutas de /admin
   if (request.nextUrl.pathname.startsWith('/admin')) {
     const authCookie = request.cookies.get('onlypadel_admin_session');
     
@@ -16,5 +37,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/club/:path*'],
 };

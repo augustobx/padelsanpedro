@@ -76,6 +76,12 @@ import { cookies } from 'next/headers';
 
 export async function getSelectedClubSlug(): Promise<string | null> {
   try {
+    const headerStore = await headers();
+    const headerClub = headerStore.get('x-padelsanpedro-club');
+    if (headerClub) {
+      return headerClub.trim();
+    }
+
     const cookieStore = await cookies();
     return cookieStore.get('padelsanpedro_active_club')?.value || null;
   } catch {

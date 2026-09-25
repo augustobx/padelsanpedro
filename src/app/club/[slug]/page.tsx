@@ -27,13 +27,7 @@ export default async function ClubPage({ params }: ClubPageProps) {
   const { slug } = await params;
 
   try {
-    const tenant = await resolveTenantBySlug(slug);
-    const cookieStore = await cookies();
-    cookieStore.set('padelsanpedro_active_club', tenant.slug, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-      sameSite: 'lax',
-    });
+    await resolveTenantBySlug(slug);
   } catch (error) {
     if (error instanceof TenantResolutionError && error.message === 'TENANT_SUSPENDED') {
       redirect('/suspendido');
