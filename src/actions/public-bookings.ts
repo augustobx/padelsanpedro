@@ -52,6 +52,16 @@ export async function getAvailableSlots(courtId: string, dateStr: string) {
             },
         });
 
+        // Buscar liberaciones de abonos fijos para este día puntual
+        const releasedBookings = await prisma.booking.findMany({
+            where: {
+                courtId,
+                startTime: { gte: startOfDay, lte: endOfDay },
+                status: 'CANCELLED',
+                fixedBookingId: { not: null },
+            },
+        });
+
         // 3. Buscar abonos fijos activos para este día de la semana
         const fixedBookings = await prisma.fixedBooking.findMany({
             where: {
@@ -84,7 +94,7 @@ export async function getAvailableSlots(courtId: string, dateStr: string) {
         }
         const now = new Date();
 
-        const slotsData: { time: string; status: string }[] = [];
+        const slotsData: { time: string; status: string; isReleased?: boolean }[] = [];
 
         while (currentMinutes + duration <= endMinutes) {
             const formatTimeAndDate = (minsTotal: number, baseDateStr: string) => {
@@ -131,14 +141,30 @@ export async function getAvailableSlots(courtId: string, dateStr: string) {
             }
 
             // ¿Tiene un abono fijo que se solapa?
-            const isFixedOccupied = fixedBookings.some(fb => {
+            let isFixedOccupied = false;
+            let isSlotReleased = false;
+
+            for (const fb of fixedBookings) {
                 const [fbStartH, fbStartM] = fb.startTime.split(':').map(Number);
                 const [fbEndH, fbEndM] = fb.endTime.split(':').map(Number);
                 const fbStartMin = fbStartH * 60 + fbStartM;
                 let fbEndMin = fbEndH * 60 + fbEndM;
                 if (fbEndMin <= fbStartMin) fbEndMin += 24 * 60;
-                return currentMinutes < fbEndMin && slotEndMinutes > fbStartMin;
-            });
+
+                if (currentMinutes < fbEndMin && slotEndMinutes > fbStartMin) {
+                    const wasReleased = releasedBookings.some(rb => 
+                        rb.fixedBookingId === fb.id && 
+                        Math.abs(new Date(rb.startTime).getTime() - slotStartTime.getTime()) < 60000
+                    );
+
+                    if (wasReleased) {
+                        isSlotReleased = true;
+                    } else {
+                        isFixedOccupied = true;
+                        break;
+                    }
+                }
+            }
 
             if (isFixedOccupied) {
                 slotsData.push({ time: timeStr, status: 'FIXED' });
@@ -160,7 +186,7 @@ export async function getAvailableSlots(courtId: string, dateStr: string) {
             }
 
             // ✅ Slot disponible
-            slotsData.push({ time: timeStr, status: 'AVAILABLE' });
+            slotsData.push({ time: timeStr, status: 'AVAILABLE', isReleased: isSlotReleased });
             currentMinutes += duration;
         }
 

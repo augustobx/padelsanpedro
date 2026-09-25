@@ -16,9 +16,11 @@ import {
   ShieldCheck,
   Flame,
   ArrowRight,
-  Lock
+  Lock,
+  Clock,
+  Zap,
 } from 'lucide-react';
-import type { PublicClubCard } from '@/actions/clubs';
+import type { PublicClubCard, HubHighlights } from '@/actions/clubs';
 
 interface LobbyDirectoryProps {
   clubs: PublicClubCard[];
@@ -29,6 +31,7 @@ interface LobbyDirectoryProps {
     category: string | null;
     avatarUrl: string | null;
   } | null;
+  hubHighlights?: HubHighlights;
   recentPostsCount?: number;
   openMatchesCount?: number;
 }
@@ -36,6 +39,7 @@ interface LobbyDirectoryProps {
 export default function LobbyDirectory({
   clubs,
   session,
+  hubHighlights,
   recentPostsCount = 0,
   openMatchesCount = 0,
 }: LobbyDirectoryProps) {
@@ -136,8 +140,100 @@ export default function LobbyDirectory({
             <p className="mt-2 text-sm sm:text-base text-slate-400 font-medium">
               Conectate con todos los clubes de la ciudad, sumate a partidos abiertos y seguí el ranking oficial desde una sola app.
             </p>
+
+            {/* Quick Live Indicators */}
+            <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800/80">
+              <span className="inline-flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/60 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl">
+                🎾 <strong>{hubHighlights?.todayAvailableCount ? `${hubHighlights.todayAvailableCount}+` : `${clubs.length * 6}+`}</strong> turnos disponibles hoy en San Pedro
+              </span>
+              {hubHighlights?.liberatedSlotsToday && hubHighlights.liberatedSlotsToday.length > 0 ? (
+                <a 
+                  href="#turnos-liberados" 
+                  className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:text-amber-200 text-xs font-black px-3 py-1.5 rounded-xl transition-all animate-pulse"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  {hubHighlights.liberatedSlotsToday.length} {hubHighlights.liberatedSlotsToday.length === 1 ? 'turno fijo liberado hoy' : 'turnos fijos liberados hoy'}
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-xl">
+                  ⚡ Grillas actualizadas en tiempo real
+                </span>
+              )}
+            </div>
           </div>
         </section>
+
+        {/* Sección de Turnos Liberados Hoy (Avisos de última hora en el Hub) */}
+        {hubHighlights?.liberatedSlotsToday && hubHighlights.liberatedSlotsToday.length > 0 && (
+          <section id="turnos-liberados" className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950/70 via-slate-900 to-amber-900/30 border-2 border-amber-500/50 p-5 sm:p-6 shadow-xl shadow-amber-500/5">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 fill-amber-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                      ¡Turnos Liberados de Último Momento!
+                    </h2>
+                    <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                      Hoy
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-200/80">
+                    Abonados que avisaron que hoy no juegan. ¡Aprovechalos antes de que se ocupen!
+                  </p>
+                </div>
+              </div>
+              
+              <div className="text-xs font-bold text-amber-400 bg-amber-950/80 border border-amber-500/30 px-3 py-1.5 rounded-xl shrink-0 self-start sm:self-auto flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                {hubHighlights.liberatedSlotsToday.length} {hubHighlights.liberatedSlotsToday.length === 1 ? 'disponible' : 'disponibles'}
+              </div>
+            </div>
+
+            {/* Grid de turnos liberados */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {hubHighlights.liberatedSlotsToday.map((slot) => (
+                <div
+                  key={slot.id}
+                  className="bg-slate-900/90 hover:bg-slate-850 border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-4 transition-all flex flex-col justify-between group shadow-sm"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-black text-emerald-400 truncate">
+                        {slot.clubName}
+                      </span>
+                      <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 whitespace-nowrap">
+                        ⚡ Turno Liberado
+                      </span>
+                    </div>
+
+                    <p className="text-base font-black text-white tracking-tight flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                      {slot.timeStr} a {slot.endTimeStr} hs
+                    </p>
+                    <p className="text-xs text-slate-400 font-medium mt-1">
+                      {slot.courtName}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 font-medium">Hoy en San Pedro</span>
+                    <Link
+                      href={`/club/${slot.clubSlug}`}
+                      className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-amber-500/15 group-hover:scale-105"
+                    >
+                      Reservar <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Hub Modules Grid */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">

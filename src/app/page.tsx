@@ -19,7 +19,7 @@ import { getUnreadMessagesCount } from "@/actions/community-chat";
 import CommunityFeedTicker from "@/components/community/CommunityFeedTicker";
 import { hasTenantFeature } from "@/lib/features";
 
-import { getPublicClubs } from "@/actions/clubs";
+import { getPublicClubs, getHubHighlights } from "@/actions/clubs";
 import LobbyDirectory from "@/components/lobby/LobbyDirectory";
 
 export default async function HomePage() {
@@ -39,15 +39,17 @@ export default async function HomePage() {
 
     // Si es la plataforma o el portal general de Padel San Pedro, renderizamos el Lobby
     if (isPlatform || !tenant) {
-        const [clubs, session] = await Promise.all([
+        const [clubs, session, hubHighlights] = await Promise.all([
             getPublicClubs(),
             getUserSession(),
+            getHubHighlights(),
         ]);
 
         return (
             <LobbyDirectory
                 clubs={clubs}
                 session={session}
+                hubHighlights={hubHighlights}
             />
         );
     }

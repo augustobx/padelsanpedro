@@ -9,10 +9,11 @@ import { es } from 'date-fns/locale';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, 
   Plus, User, Phone, Trash2, X, Lock, Repeat, CheckCircle2, AlertCircle, 
-  Layers, Eye, Filter, Sparkles, RefreshCw, CalendarDays, LayoutGrid
+  Layers, Eye, Filter, Sparkles, RefreshCw, CalendarDays, LayoutGrid, Zap, RotateCcw
 } from 'lucide-react';
 import { 
-  getAdminCalendarData, getAdminCalendarWeekData, createAdminBooking, cancelAdminBooking 
+  getAdminCalendarData, getAdminCalendarWeekData, createAdminBooking, cancelAdminBooking,
+  releaseFixedBookingForDate, restoreFixedBookingForDate
 } from '@/actions/admin-calendar';
 import { getMonthlyStats } from '@/actions/monthly-calendar';
 import { Button } from '@/components/ui/button';
@@ -236,8 +237,54 @@ export default function AdminInteractiveCalendar({
     }
   };
 
+  const handleReleaseFixedSlot = async (courtId: string, dateStr: string, time: string, endTime: string, fixedBookingId: string) => {
+    if (confirm(`¿Liberar este turno fijo para el día ${dateStr} (${time} a ${endTime} hs)?\n\nEl turno quedará DISPONIBLE para que lo vendas a otro cliente o lo reserven por la web/WhatsApp, manteniendo todas las demás semanas del abono intactas.`)) {
+      setLoading(true);
+      const res = await releaseFixedBookingForDate({
+        courtId,
+        dateStr,
+        startTimeStr: time,
+        endTimeStr: endTime,
+        fixedBookingId,
+      });
+      if (res.success) {
+        loadData();
+      } else {
+        alert(res.error || 'Error al liberar el turno fijo.');
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleRestoreFixedSlot = async (courtId: string, dateStr: string, time: string, endTime: string, fixedBookingId: string) => {
+    if (confirm(`¿Restablecer este turno al titular original del abono para el día ${dateStr}?`)) {
+      setLoading(true);
+      const res = await restoreFixedBookingForDate({
+        courtId,
+        dateStr,
+        startTimeStr: time,
+        endTimeStr: endTime,
+        fixedBookingId,
+      });
+      if (res.success) {
+        loadData();
+      } else {
+        alert(res.error || 'Error al restablecer el abono.');
+        setLoading(false);
+      }
+    }
+  };
+
   // Status color helpers
   const getSlotBadge = (status: SlotItem['status'], booking?: any) => {
+    if (booking?.isReleased) {
+      return (
+        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-400/60 shadow-xs animate-pulse">
+          <Zap className="w-3 h-3 text-amber-600 fill-amber-500" /> Turno Liberado
+        </span>
+      );
+    }
+
     switch (status) {
       case 'CONFIRMED':
         return (
@@ -416,12 +463,15 @@ export default function AdminInteractiveCalendar({
                   <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[600px] pr-1">
                     {slots.map((slot, idx) => {
                       const isOccupied = slot.status !== 'FREE';
+                      const isReleased = Boolean(slot.isReleased);
                       return (
                         <div 
                           key={idx}
                           id={slot.booking?.id ? `booking-${slot.booking.id}` : undefined}
                           className={`flex items-center justify-between p-3.5 rounded-2xl transition-all border ${
-                            isOccupied
+                            isReleased
+                              ? 'bg-amber-50/80 dark:bg-amber-950/25 border-amber-300 dark:border-amber-800/60 shadow-xs'
+                              : isOccupied
                               ? slot.status === 'BLOCKED'
                                 ? 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
                                 : slot.status === 'FIXED'
@@ -436,7 +486,17 @@ export default function AdminInteractiveCalendar({
                               {slot.time} - {slot.endTime}
                             </div>
                             <div className="min-w-0">
-                              {isOccupied ? (
+                              {isReleased ? (
+                                <div className="truncate">
+                                  <p className="text-xs font-bold text-amber-900 dark:text-amber-200 truncate flex items-center gap-1">
+                                    <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0" />
+                                    <span>Disponible (Turno Liberado)</span>
+                                  </p>
+                                  <p className="text-[10px] text-amber-700 dark:text-amber-400 truncate">
+                                    Abono: {slot.booking?.user?.name || 'Cliente'}
+                                  </p>
+                                </div>
+                              ) : isOccupied ? (
                                 <div className="truncate">
                                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                     {slot.booking?.user?.name || 'Cliente'}
@@ -453,9 +513,55 @@ export default function AdminInteractiveCalendar({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             {getSlotBadge(slot.status, slot.booking)}
-                            {isOccupied ? (
+                            {isReleased ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => openNewBookingModal(court.id, court.name, formattedCurrentDate, slot.time, slot.endTime)}
+                                  className="h-7 px-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
+                                  title="Vender este turno liberado"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" /> Vender
+                                </Button>
+                                {slot.booking?.fixedBookingId && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRestoreFixedSlot(court.id, formattedCurrentDate, slot.time, slot.endTime, slot.booking.fixedBookingId)}
+                                    className="h-7 px-2 text-xs font-bold rounded-lg text-slate-500 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/50"
+                                    title="Restablecer al titular del abono para hoy"
+                                  >
+                                    <RotateCcw className="w-3 h-3 mr-1" /> Restablecer
+                                  </Button>
+                                )}
+                              </>
+                            ) : slot.status === 'FIXED' ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleReleaseFixedSlot(court.id, formattedCurrentDate, slot.time, slot.endTime, slot.booking?.fixedBookingId || slot.booking?.id)}
+                                  className="h-7 px-2 text-xs font-bold rounded-lg border-amber-300 dark:border-amber-700/60 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                                  title="Liberar este turno solo para hoy"
+                                >
+                                  <Zap className="w-3 h-3 mr-1 text-amber-600 fill-amber-500" /> Liberar hoy
+                                </Button>
+                                {slot.booking?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleCancelBooking(slot.booking.id)}
+                                    className="h-7 w-7 text-slate-400 hover:text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-950/50 rounded-lg"
+                                    title="Cancelar turno"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </>
+                            ) : isOccupied ? (
                               slot.booking?.id && (
                                 <Button
                                   variant="ghost"
@@ -542,29 +648,39 @@ export default function AdminInteractiveCalendar({
                         ) : (
                           dayItem.dayData.flatMap(c => c.slots.map(s => ({ ...s, courtName: c.court.name, courtId: c.court.id }))).map((slot, idx) => {
                             const isOccupied = slot.status !== 'FREE';
+                            const isReleased = Boolean(slot.isReleased);
                             return (
                               <div
                                 key={idx}
                                 onClick={() => {
-                                  if (!isOccupied) {
+                                  if (!isOccupied || isReleased) {
                                     openNewBookingModal(slot.courtId, slot.courtName, dayItem.dateStr, slot.time, slot.endTime);
+                                  } else if (slot.status === 'FIXED') {
+                                    handleReleaseFixedSlot(slot.courtId, dayItem.dateStr, slot.time, slot.endTime, slot.booking?.fixedBookingId || slot.booking?.id);
                                   }
                                 }}
                                 className={`p-2 rounded-xl text-left transition-all text-xs border ${
-                                  isOccupied
+                                  isReleased
+                                    ? 'bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-950/70 dark:text-amber-200 dark:border-amber-800/80 cursor-pointer shadow-xs'
+                                    : isOccupied
                                     ? slot.status === 'BLOCKED'
                                       ? 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-200 dark:border-rose-900/60'
                                       : slot.status === 'FIXED'
-                                      ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/70 dark:text-purple-200 dark:border-purple-900/60'
+                                      ? 'bg-purple-100 text-purple-900 border-purple-300 dark:bg-purple-950/70 dark:text-purple-200 dark:border-purple-900/60 cursor-pointer hover:border-amber-400'
                                       : 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-200 dark:border-emerald-900/60'
                                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400 cursor-pointer shadow-xs'
                                 }`}
+                                title={slot.status === 'FIXED' ? 'Clic para liberar este turno en esta fecha' : undefined}
                               >
                                 <div className="flex items-center justify-between font-black text-[10px]">
                                   <span>{slot.time}</span>
                                   <span className="opacity-75">{slot.courtName}</span>
                                 </div>
-                                {isOccupied ? (
+                                {isReleased ? (
+                                  <p className="font-bold text-[11px] truncate mt-0.5 text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                                    <Zap className="w-3 h-3 text-amber-600 fill-amber-500 shrink-0" /> Liberado
+                                  </p>
+                                ) : isOccupied ? (
                                   <p className="font-bold text-[11px] truncate mt-0.5">
                                     {slot.booking?.user?.name || (slot.status === 'BLOCKED' ? 'Bloqueo' : 'Turno')}
                                   </p>

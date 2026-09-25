@@ -159,3 +159,205 @@ export async function updateFixedBooking(id: string, data: {
         return { success: false, error: error.message || 'Error al actualizar el abono.' };
     }
 }
+
+export async function releaseFixedBookingForDate(data: {
+    fixedBookingId: string;
+    courtId: string;
+    dateStr: string;
+    startTimeStr: string;
+    endTimeStr?: string;
+}) {
+    try {
+        await requireAdmin();
+        const startDateTime = new Date(`${data.dateStr}T${data.startTimeStr}:00-03:00`);
+        let endDateTime = data.endTimeStr
+            ? new Date(`${data.dateStr}T${data.endTimeStr}:00-03:00`)
+            : new Date(startDateTime.getTime() + 90 * 60 * 1000);
+        if (endDateTime <= startDateTime) {
+            endDateTime.setDate(endDateTime.getDate() + 1);
+        }
+
+        const fb = await prisma.fixedBooking.findUnique({
+            where: { id: data.fixedBookingId },
+            include: { user: true, court: true }
+        });
+        if (!fb) {
+            return { success: false, error: 'Abono fijo no encontrado.' };
+        }
+
+        // Buscar si ya existe una reserva registrada para ese día puntual
+        const existingBooking = await prisma.booking.findFirst({
+            where: {
+                courtId: data.courtId,
+                startTime: startDateTime,
+                fixedBookingId: fb.id,
+            }
+        });
+
+        if (existingBooking) {
+            await prisma.booking.update({
+                where: { id: existingBooking.id },
+                data: {
+                    status: 'CANCELLED',
+                    slotKey: null,
+                    description: `[TURNO LIBERADO] Abono de ${fb.user?.name || 'Cliente'}`
+                }
+            });
+        } else {
+            // Si no existía aún en la tabla Booking, lo creamos directamente como CANCELLED
+            await prisma.booking.create({
+                data: {
+                    tenantId: fb.tenantId,
+                    courtId: data.courtId,
+                    userId: fb.userId,
+                    startTime: startDateTime,
+                    endTime: endDateTime,
+                    status: 'CANCELLED',
+                    slotKey: null,
+                    fixedBookingId: fb.id,
+                    totalAmount: 0,
+                    description: `[TURNO LIBERADO] Abono de ${fb.user?.name || 'Cliente'}`
+                }
+            });
+        }
+
+        revalidatePath('/admin/calendar');
+        revalidatePath('/admin/abonos');
+        revalidatePath('/');
+        return { success: true, message: 'Turno liberado con éxito para esta fecha.' };
+    } catch (error: any) {
+        console.error('Error in releaseFixedBookingForDate:', error);
+        return { success: false, error: error.message || 'Error al liberar el turno fijo.' };
+    }
+}
+
+export async function restoreFixedBookingForDate(data: {
+    fixedBookingId: string;
+    courtId: string;
+    dateStr: string;
+    startTimeStr: string;
+    endTimeStr?: string;
+}) {
+    try {
+        await requireAdmin();
+        const startDateTime = new Date(`${data.dateStr}T${data.startTimeStr}:00-03:00`);
+        let endDateTime = data.endTimeStr
+            ? new Date(`${data.dateStr}T${data.endTimeStr}:00-03:00`)
+            : new Date(startDateTime.getTime() + 90 * 60 * 1000);
+        if (endDateTime <= startDateTime) {
+            endDateTime.setDate(endDateTime.getDate() + 1);
+        }
+
+        // Verificar si alguien ya reservó este turno mientras estuvo liberado
+        const conflictingBooking = await prisma.booking.findFirst({
+            where: {
+                courtId: data.courtId,
+                startTime: { lt: endDateTime },
+                endTime: { gt: startDateTime },
+                status: { in: ['PENDING', 'CONFIRMED', 'BLOCKED'] }
+            }
+        });
+        if (conflictingBooking) {
+            return { 
+                success: false, 
+                error: 'No se puede restablecer: el turno ya fue reservado por otro cliente para este día.' 
+            };
+        }
+
+        const fb = await prisma.fixedBooking.findUnique({
+            where: { id: data.fixedBookingId },
+            include: { user: true }
+        });
+        if (!fb) return { success: false, error: 'Abono fijo no encontrado.' };
+
+        const releasedBooking = await prisma.booking.findFirst({
+            where: {
+                courtId: data.courtId,
+                startTime: startDateTime,
+                fixedBookingId: fb.id,
+                status: 'CANCELLED'
+            }
+        });
+
+        if (releasedBooking) {
+            await prisma.booking.update({
+                where: { id: releasedBooking.id },
+                data: {
+                    status: 'FIXED',
+                    slotKey: `${data.courtId}:${startDateTime.toISOString()}`,
+                    description: `Abono fijo semanal`
+                }
+            });
+        }
+
+        revalidatePath('/admin/calendar');
+        revalidatePath('/admin/abonos');
+        revalidatePath('/');
+        return { success: true, message: 'Turno fijo restablecido para esta fecha.' };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Error al restablecer turno fijo.' };
+    }
+}
+
+export async function getUpcomingDatesForFixedBooking(fixedBookingId: string) {
+    try {
+        await requireAdmin();
+        const fb = await prisma.fixedBooking.findUnique({
+            where: { id: fixedBookingId },
+            include: { court: true, user: true }
+        });
+        if (!fb) return { success: false, error: 'Abono no encontrado.' };
+
+        const now = new Date();
+        const base = new Date();
+        base.setHours(12, 0, 0, 0);
+
+        let current = new Date(base);
+        while (current.getDay() !== fb.dayOfWeek) {
+            current.setDate(current.getDate() + 1);
+        }
+
+        const dateList: string[] = [];
+        for (let i = 0; i < 8; i++) {
+            const d = new Date(current);
+            d.setDate(current.getDate() + (i * 7));
+            dateList.push(d.toISOString().split('T')[0]);
+        }
+
+        const bookings = await prisma.booking.findMany({
+            where: {
+                courtId: fb.courtId,
+                startTime: {
+                    gte: new Date(`${dateList[0]}T00:00:00-03:00`),
+                    lte: new Date(`${dateList[dateList.length - 1]}T23:59:59-03:00`),
+                }
+            },
+            include: { user: true }
+        });
+
+        const result = dateList.map(dateStr => {
+            const startD = new Date(`${dateStr}T${fb.startTime}:00-03:00`);
+            const slotBookings = bookings.filter(b => 
+                Math.abs(new Date(b.startTime).getTime() - startD.getTime()) < 60000
+            );
+
+            const releasedBooking = slotBookings.find(b => b.fixedBookingId === fb.id && b.status === 'CANCELLED');
+            const rebooked = slotBookings.find(b => b.status === 'CONFIRMED' || b.status === 'PENDING');
+
+            return {
+                dateStr,
+                timeStr: fb.startTime,
+                endTimeStr: fb.endTime,
+                courtName: fb.court?.name,
+                isReleased: Boolean(releasedBooking && !rebooked),
+                isRebooked: Boolean(rebooked),
+                rebookedBy: rebooked?.user?.name || null,
+            };
+        });
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        return { success: false, error: 'Error al obtener fechas del abono.' };
+    }
+}
+

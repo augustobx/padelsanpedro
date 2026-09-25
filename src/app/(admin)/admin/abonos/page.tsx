@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trash2, Clock, Calendar, MapPin, User, Loader2, Search, Edit2, X } from 'lucide-react';
-import { getFixedBookings, deleteFixedBooking, updateFixedBooking } from '@/actions/fixed-bookings';
+import { Trash2, Clock, Calendar, MapPin, User, Loader2, Search, Edit2, X, Zap, RotateCcw } from 'lucide-react';
+import { 
+  getFixedBookings, deleteFixedBooking, updateFixedBooking,
+  releaseFixedBookingForDate, restoreFixedBookingForDate, getUpcomingDatesForFixedBooking
+} from '@/actions/fixed-bookings';
 import { getCourts } from '@/actions/courts';
 
 interface FixedBooking {
@@ -45,6 +48,20 @@ export default function AbonosPage() {
     clientPhone: ''
   });
   const [saving, setSaving] = useState(false);
+
+  // Liberación puntual por fecha
+  const [releasingAbono, setReleasingAbono] = useState<FixedBooking | null>(null);
+  const [upcomingDates, setUpcomingDates] = useState<{
+    dateStr: string;
+    timeStr: string;
+    endTimeStr: string;
+    courtName: string;
+    isReleased: boolean;
+    isRebooked: boolean;
+    rebookedBy: string | null;
+  }[]>([]);
+  const [loadingDates, setLoadingDates] = useState(false);
+  const [actionLoadingDate, setActionLoadingDate] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAbonos();
@@ -105,6 +122,59 @@ export default function AbonosPage() {
       alert(res.error || 'Error al actualizar el abono');
     }
     setSaving(false);
+  };
+
+  const openLiberarModal = async (abono: FixedBooking) => {
+    setReleasingAbono(abono);
+    setLoadingDates(true);
+    const res = await getUpcomingDatesForFixedBooking(abono.id);
+    if (res.success && res.data) {
+      setUpcomingDates(res.data);
+    } else {
+      alert(res.error || 'No se pudieron cargar las fechas.');
+    }
+    setLoadingDates(false);
+  };
+
+  const handleReleaseSingleDate = async (dateStr: string, timeStr: string, endTimeStr: string) => {
+    if (!releasingAbono) return;
+    setActionLoadingDate(dateStr);
+    const res = await releaseFixedBookingForDate({
+      fixedBookingId: releasingAbono.id,
+      courtId: releasingAbono.courtId || releasingAbono.court?.id,
+      dateStr,
+      startTimeStr: timeStr,
+      endTimeStr,
+    });
+    if (res.success) {
+      // Refrescar fechas del modal
+      const refreshed = await getUpcomingDatesForFixedBooking(releasingAbono.id);
+      if (refreshed.success && refreshed.data) setUpcomingDates(refreshed.data);
+      fetchAbonos();
+    } else {
+      alert(res.error || 'Error al liberar la fecha.');
+    }
+    setActionLoadingDate(null);
+  };
+
+  const handleRestoreSingleDate = async (dateStr: string, timeStr: string, endTimeStr: string) => {
+    if (!releasingAbono) return;
+    setActionLoadingDate(dateStr);
+    const res = await restoreFixedBookingForDate({
+      fixedBookingId: releasingAbono.id,
+      courtId: releasingAbono.courtId || releasingAbono.court?.id,
+      dateStr,
+      startTimeStr: timeStr,
+      endTimeStr,
+    });
+    if (res.success) {
+      const refreshed = await getUpcomingDatesForFixedBooking(releasingAbono.id);
+      if (refreshed.success && refreshed.data) setUpcomingDates(refreshed.data);
+      fetchAbonos();
+    } else {
+      alert(res.error || 'Error al restablecer la fecha.');
+    }
+    setActionLoadingDate(null);
   };
 
   if (loading && abonos.length === 0) {
@@ -234,18 +304,27 @@ export default function AbonosPage() {
                 </div>
 
                 {abono.isActive && (
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    <button
+                      onClick={() => openLiberarModal(abono)}
+                      className="flex items-center px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/40 rounded-xl text-xs font-bold transition-colors border border-amber-200 dark:border-amber-800/50"
+                      title="Liberar un día puntual si el cliente avisa que no va"
+                    >
+                      <Zap className="w-3.5 h-3.5 mr-1.5 text-amber-600 fill-amber-500" />
+                      Liberar una fecha
+                    </button>
+
                     <button
                       onClick={() => handleDelete(abono.id)}
                       disabled={deletingId === abono.id}
-                      className="flex items-center px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl text-sm font-bold transition-colors"
+                      className="flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-900/40 rounded-xl text-xs font-bold transition-colors"
                     >
                       {deletingId === abono.id ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
                       )}
-                      Cancelar Abono
+                      Cancelar Todo
                     </button>
                   </div>
                 )}
@@ -359,6 +438,120 @@ export default function AbonosPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Liberar Fechas Puntuales */}
+      {releasingAbono && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/40">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                  <Zap className="w-5 h-5 fill-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-slate-900 dark:text-white">Liberar Fechas Puntuales</h3>
+                  <p className="text-xs text-slate-500">
+                    Abono de {releasingAbono.user.name} • {DAYS[releasingAbono.dayOfWeek]} {releasingAbono.startTime}hs
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setReleasingAbono(null)} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 p-3.5 rounded-2xl text-xs border border-amber-200/70 dark:border-amber-800/40 leading-relaxed">
+                <span className="font-bold">¿El cliente te avisó que no viene un día?</span> Liberá únicamente esa fecha para que quede disponible para otro cliente o venta en el Hub/WhatsApp. Las demás semanas se mantienen intactas.
+              </div>
+
+              {loadingDates ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-7 h-7 text-amber-600 animate-spin" />
+                  <p className="text-xs text-slate-400 font-medium">Cargando próximas fechas...</p>
+                </div>
+              ) : upcomingDates.length === 0 ? (
+                <p className="text-center py-8 text-xs text-slate-400">No se encontraron fechas próximas.</p>
+              ) : (
+                <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                  {upcomingDates.map((item) => (
+                    <div 
+                      key={item.dateStr}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                        item.isRebooked
+                          ? 'bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/40'
+                          : item.isReleased
+                          ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-800/50'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 capitalize">
+                          {new Date(`${item.dateStr}T12:00:00`).toLocaleDateString('es-AR', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {item.timeStr} a {item.endTimeStr} hs • {item.courtName}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {item.isRebooked ? (
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200">
+                            Vendido a {item.rebookedBy || 'Cliente'}
+                          </span>
+                        ) : item.isReleased ? (
+                          <>
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 animate-pulse">
+                              ⚡ Liberado
+                            </span>
+                            <button
+                              onClick={() => handleRestoreSingleDate(item.dateStr, item.timeStr, item.endTimeStr)}
+                              disabled={actionLoadingDate === item.dateStr}
+                              className="px-2.5 py-1 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/50 rounded-xl transition-colors"
+                            >
+                              {actionLoadingDate === item.dateStr ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '↩ Restablecer'}
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleReleaseSingleDate(item.dateStr, item.timeStr, item.endTimeStr)}
+                            disabled={actionLoadingDate === item.dateStr}
+                            className="flex items-center px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors"
+                          >
+                            {actionLoadingDate === item.dateStr ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                            ) : (
+                              <Zap className="w-3.5 h-3.5 mr-1 fill-slate-950" />
+                            )}
+                            Liberar este día
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end bg-slate-50/50 dark:bg-slate-800/40">
+              <button
+                onClick={() => setReleasingAbono(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

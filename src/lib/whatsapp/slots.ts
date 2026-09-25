@@ -39,6 +39,16 @@ export async function getAvailableSlotsForDate(
         },
     });
 
+    // Buscar liberaciones puntuales de abonos fijos para este día
+    const releasedBookings = await prisma.booking.findMany({
+        where: {
+            courtId,
+            startTime: { gte: startOfDay, lte: endOfDay },
+            status: 'CANCELLED',
+            fixedBookingId: { not: null },
+        },
+    });
+
     // 3. Buscar abonos fijos activos para este día de la semana
     const fixedBookings = await prisma.fixedBooking.findMany({
         where: {
@@ -107,7 +117,14 @@ export async function getAvailableSlotsForDate(
             const [fbEndH, fbEndM] = fb.endTime.split(':').map(Number);
             const fbStartMin = fbStartH * 60 + fbStartM;
             const fbEndMin = fbEndH * 60 + fbEndM;
-            return currentMinutes < fbEndMin && slotEndMinutes > fbStartMin;
+            if (currentMinutes < fbEndMin && slotEndMinutes > fbStartMin) {
+                const wasReleased = releasedBookings.some(rb => 
+                    rb.fixedBookingId === fb.id && 
+                    Math.abs(new Date(rb.startTime).getTime() - slotStartTime.getTime()) < 60000
+                );
+                return !wasReleased;
+            }
+            return false;
         });
 
         if (isFixedOccupied) {

@@ -48,6 +48,16 @@ export async function getAdminCalendarData(courtId: string, dateStr: string) {
                 include: { user: true }
             });
 
+            const releasedBookings = await prisma.booking.findMany({
+                where: {
+                    courtId: court.id,
+                    startTime: { gte: startOfD, lte: endOfD },
+                    status: 'CANCELLED',
+                    fixedBookingId: { not: null }
+                },
+                include: { user: true }
+            });
+
             const fixedBookings = await prisma.fixedBooking.findMany({
                 where: {
                     courtId: court.id,
@@ -121,6 +131,12 @@ export async function getAdminCalendarData(courtId: string, dateStr: string) {
                         return currentMinutes < fbEndMin && slotEndMins > fbStartMin;
                     });
 
+                    // Buscar si este slot puntual fue liberado de un abono fijo para hoy
+                    const released = releasedBookings.find(rb => {
+                        const rbStart = new Date(rb.startTime).getTime();
+                        return Math.abs(rbStart - slotStartTime) < 60000 && (fixed ? rb.fixedBookingId === fixed.id : true);
+                    });
+
                     // Buscar bloqueos que se solapen
                     const block = courtBlocks.find(cb => {
                         const cbStart = new Date(cb.startTime).getTime();
@@ -129,14 +145,41 @@ export async function getAdminCalendarData(courtId: string, dateStr: string) {
                     });
 
                     let finalStatus = 'FREE';
-                    let finalBooking = null;
+                    let finalBooking: any = null;
 
                     if (booking) {
                         finalStatus = booking.status;
-                        finalBooking = booking;
-                    } else if (fixed) {
+                        finalBooking = {
+                            id: booking.id,
+                            user: booking.user,
+                            description: booking.description,
+                            totalAmount: booking.totalAmount,
+                            fixedBookingId: booking.fixedBookingId,
+                        };
+                    } else if (fixed && !released) {
                         finalStatus = 'FIXED';
-                        finalBooking = { id: fixed.id, user: fixed.user };
+                        finalBooking = { 
+                            id: fixed.id, 
+                            fixedBookingId: fixed.id, 
+                            user: fixed.user,
+                            dateStr,
+                            timeStr,
+                            endTimeStr,
+                            courtId: court.id
+                        };
+                    } else if (released) {
+                        // Turno liberado de abono: queda LIBRE para que el club lo venda
+                        finalStatus = 'FREE';
+                        finalBooking = {
+                            isReleased: true,
+                            releasedBookingId: released.id,
+                            fixedBookingId: released.fixedBookingId,
+                            user: released.user || (fixed ? fixed.user : null),
+                            dateStr,
+                            timeStr,
+                            endTimeStr,
+                            courtId: court.id,
+                        };
                     } else if (block) {
                         finalStatus = 'BLOCKED';
                         finalBooking = { id: block.id, user: { name: block.reason || 'Bloqueo' } };
@@ -147,6 +190,7 @@ export async function getAdminCalendarData(courtId: string, dateStr: string) {
                         endTime: endTimeStr,
                         status: finalStatus,
                         booking: finalBooking,
+                        isReleased: Boolean(released && !booking),
                     });
 
                     currentMinutes += duration;
@@ -332,3 +376,5 @@ export async function cancelAdminBooking(bookingId: string) {
         return { success: false, error: 'Error al cancelar.' };
     }
 }
+
+export { releaseFixedBookingForDate, restoreFixedBookingForDate } from '@/actions/fixed-bookings';
