@@ -79,28 +79,28 @@ export default function PostCard({
   return (
     <article
       className={`
-        bg-white dark:bg-slate-900 rounded-2xl border shadow-sm overflow-hidden transition-all
+        bg-slate-900 rounded-2xl border shadow-md overflow-hidden transition-all
         ${
           isAnnouncement
-            ? "border-[var(--color-primary)]/40 ring-1 ring-[var(--color-primary)]/20"
-            : "border-slate-200/80 dark:border-slate-800/80"
+            ? "border-emerald-500/40 ring-1 ring-emerald-500/20"
+            : "border-slate-800"
         }
-        ${post.isPinned ? "ring-1 ring-amber-200 dark:ring-amber-800/40" : ""}
+        ${post.isPinned ? "ring-1 ring-amber-500/40" : ""}
       `}
     >
       {/* Pinned / Announcement badge */}
       {(post.isPinned || isAnnouncement) && (
         <div
-          className={`px-4 py-1.5 text-[11px] font-bold flex items-center gap-1.5 ${
+          className={`px-4 py-1.5 text-[11px] font-bold flex items-center gap-1.5 border-b ${
             isAnnouncement
-              ? "bg-gradient-to-r from-[var(--color-primary)]/15 to-[var(--color-secondary)]/15 text-[var(--color-primary)]"
-              : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300"
+              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+              : "bg-amber-500/15 text-amber-400 border-amber-500/20"
           }`}
         >
           {isAnnouncement ? (
-            <><Megaphone className="w-3 h-3" /> Anuncio del Club</>
+            <><Megaphone className="w-3 h-3 text-emerald-400" /> Anuncio Oficial</>
           ) : (
-            <><Pin className="w-3 h-3" /> Fijado</>
+            <><Pin className="w-3 h-3 text-amber-400" /> Fijado</>
           )}
         </div>
       )}
@@ -111,8 +111,8 @@ export default function PostCard({
           <div
             className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-md ${
               isAnnouncement
-                ? "bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)]"
-                : "bg-gradient-to-br from-slate-500 to-slate-700 dark:from-slate-600 dark:to-slate-800"
+                ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 font-black"
+                : "bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700 text-slate-200"
             }`}
           >
             {post.author.avatarUrl ? (
@@ -128,16 +128,16 @@ export default function PostCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                {isAnnouncement ? "📢 Club" : authorName}
+              <span className="font-bold text-sm text-white truncate">
+                {isAnnouncement ? "📢 Oficial" : authorName}
               </span>
               {post.author.category && !isAnnouncement && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   {post.author.category}
                 </span>
               )}
             </div>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] text-slate-400">
               {timeAgo}
             </span>
           </div>
@@ -146,7 +146,7 @@ export default function PostCard({
           {isOwner && (
             <button
               onClick={handleDelete}
-              className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-400 hover:text-red-500 transition-colors"
+              className="p-1.5 rounded-full hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 transition-colors"
               title="Eliminar"
             >
               <Trash2 className="w-4 h-4" />
@@ -155,13 +155,13 @@ export default function PostCard({
         </div>
 
         {/* Content */}
-        <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+        <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
           {post.content}
         </p>
 
         {/* Image */}
         {post.imageUrl && (
-          <div className="mt-3 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800">
+          <div className="mt-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
             <img
               src={post.imageUrl}
               alt="Imagen adjunta"
@@ -172,7 +172,7 @@ export default function PostCard({
       </div>
 
       {/* Actions bar */}
-      <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-1">
+      <div className="px-4 py-2.5 border-t border-slate-800/80 flex items-center gap-1.5 bg-slate-900/60">
         {/* Like button */}
         <button
           onClick={handleLike}
@@ -181,14 +181,14 @@ export default function PostCard({
             flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95
             ${
               liked
-                ? "bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400"
-                : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }
           `}
         >
           <Heart
             className={`w-4 h-4 transition-all ${
-              liked ? "fill-pink-500 text-pink-500 scale-110" : ""
+              liked ? "fill-rose-500 text-rose-500 scale-110" : ""
             }`}
           />
           {likesCount > 0 && <span>{likesCount}</span>}
@@ -201,8 +201,8 @@ export default function PostCard({
             flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95
             ${
               showComments
-                ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400"
-                : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold"
+                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
             }
           `}
         >

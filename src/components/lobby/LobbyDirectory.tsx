@@ -488,21 +488,21 @@ export default function LobbyDirectory({
       </main>
 
       {/* Bottom Navigation Bar for Mobile (PWA App Experience) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-4 py-2 md:hidden">
-        <div className="max-w-md mx-auto grid grid-cols-4 items-center gap-1 text-center">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-1.5 md:hidden">
+        <div className="max-w-md mx-auto grid grid-cols-5 items-center gap-1 text-center">
           <Link
             href="/"
             className="flex flex-col items-center py-1 text-emerald-400 font-bold transition-colors"
           >
-            <Calendar className="w-5 h-5 mb-0.5" />
+            <Calendar className="w-4 h-4 mb-0.5" />
             <span className="text-[10px] tracking-tight">Canchas</span>
           </Link>
 
           <Link
-            href="/comunidad?tab=partidos"
+            href="/comunidad/turnos"
             className="flex flex-col items-center py-1 text-slate-400 hover:text-white transition-colors"
           >
-            <Users className="w-5 h-5 mb-0.5" />
+            <Users className="w-4 h-4 mb-0.5" />
             <span className="text-[10px] tracking-tight">Partidos</span>
           </Link>
 
@@ -510,18 +510,26 @@ export default function LobbyDirectory({
             href="/comunidad"
             className="flex flex-col items-center py-1 text-slate-400 hover:text-white transition-colors"
           >
-            <MessageSquare className="w-5 h-5 mb-0.5" />
-            <span className="text-[10px] tracking-tight">Comunidad</span>
+            <MessageSquare className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] tracking-tight">Muro</span>
+          </Link>
+
+          <Link
+            href="/ranking"
+            className="flex flex-col items-center py-1 text-slate-400 hover:text-white transition-colors"
+          >
+            <Trophy className="w-4 h-4 mb-0.5" />
+            <span className="text-[10px] tracking-tight">Ranking</span>
           </Link>
 
           <Link
             href={session ? '/perfil' : '/login-usuario'}
             className="flex flex-col items-center py-1 text-slate-400 hover:text-white transition-colors"
           >
-            <div className="w-5 h-5 mb-0.5 rounded-full border border-slate-600 flex items-center justify-center text-[10px]">
+            <div className="w-4 h-4 mb-0.5 rounded-full border border-slate-600 flex items-center justify-center text-[9px] font-bold">
               {session?.name ? session.name[0].toUpperCase() : '👤'}
             </div>
-            <span className="text-[10px] tracking-tight">{session ? 'Mi Perfil' : 'Ingresar'}</span>
+            <span className="text-[10px] tracking-tight">{session ? 'Perfil' : 'Ingresar'}</span>
           </Link>
         </div>
       </nav>

@@ -40,18 +40,18 @@ export default function CommunityFeedTicker({
   // If no posts yet, show friendly community invitation
   if (!posts || posts.length === 0) {
     return (
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-700 px-3.5 py-2 text-white shadow-sm z-30 shrink-0 border-b border-violet-800/30">
+      <div className="bg-gradient-to-r from-emerald-700 via-teal-800 to-slate-900 px-3.5 py-2 text-white shadow-sm z-30 shrink-0 border-b border-emerald-600/30">
         <Link
           href="/comunidad"
           className="flex items-center justify-between gap-2.5 hover:opacity-95 transition-opacity group"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-violet-200 animate-pulse" />
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-black tracking-tight truncate">
-                Comunidad: Buscá compañeros, armá partidos y compartí
+                Comunidad Padel San Pedro: Buscá compañeros y armá partidos
               </p>
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function CommunityFeedTicker({
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-800 px-3.5 py-2 text-white shadow-sm z-30 shrink-0 border-b border-violet-900/40 relative overflow-hidden group"
+      className="bg-slate-900 px-3.5 py-2 text-white shadow-sm z-30 shrink-0 border-b border-slate-800 relative overflow-hidden group"
     >
       <Link
         href="/comunidad"
@@ -83,13 +83,13 @@ export default function CommunityFeedTicker({
             className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${
               isAnnouncement
                 ? "bg-amber-400 text-amber-950 font-black"
-                : "bg-white/20 text-white"
+                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
             }`}
           >
             {isAnnouncement ? (
               <Megaphone className="w-3.5 h-3.5" />
             ) : (
-              <MessageSquare className="w-3.5 h-3.5 text-violet-100" />
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-300" />
             )}
           </div>
 
@@ -100,10 +100,10 @@ export default function CommunityFeedTicker({
                 className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded-full ${
                   isAnnouncement
                     ? "bg-amber-400/20 text-amber-200 border border-amber-400/40"
-                    : "bg-violet-400/20 text-violet-200 border border-violet-300/30"
+                    : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                 }`}
               >
-                {isAnnouncement ? "Aviso del Club" : "Comunidad"}
+                {isAnnouncement ? "Aviso Oficial" : "Comunidad"}
               </span>
               <span className="text-[11px] font-bold text-white/95 truncate">
                 {currentPost.authorName}

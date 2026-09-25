@@ -109,17 +109,40 @@ export default async function PerfilPage() {
 
     return (
         <div 
-            data-theme={themeColors.themeName}
-            className={`${themeColors.themeClass} min-h-screen bg-[var(--background)] text-[var(--foreground)] flex flex-col md:items-center md:py-8`}
+            className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:items-center md:py-6"
             style={{ 
-                '--color-primary': primaryColor,
-                '--color-primary-foreground': getReadableForeground(primaryColor),
-                '--color-secondary': secondaryColor,
-                '--color-secondary-foreground': getReadableForeground(secondaryColor),
+                '--color-primary': '#10b981',
+                '--color-primary-foreground': '#022c22',
+                '--color-secondary': '#06b6d4',
+                '--color-secondary-foreground': '#ffffff',
             } as React.CSSProperties}
         >
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 min-h-screen md:min-h-0 md:rounded-[2.5rem] md:shadow-2xl md:border md:border-slate-200 dark:border-slate-800 relative overflow-hidden flex flex-col">
-                <PublicNavbar sysSettings={settings} />
+            <div className="w-full max-w-lg bg-slate-900 min-h-screen md:min-h-0 md:rounded-3xl md:shadow-2xl md:border md:border-slate-800 relative overflow-hidden flex flex-col">
+                {/* Platform Header */}
+                <div className="bg-slate-950/90 backdrop-blur-md px-4 py-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                        <Link href="/" className="font-black text-white text-base tracking-tight hover:opacity-90 transition-opacity">
+                            🎾 PADEL<span className="text-emerald-400">SANPEDRO</span>
+                        </Link>
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                            Mi Perfil
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-white bg-slate-800/80 border border-slate-700/60 px-2.5 py-1.5 rounded-xl transition-all"
+                        >
+                            Canchas
+                        </Link>
+                        <Link
+                            href="/comunidad"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl transition-all"
+                        >
+                            Comunidad
+                        </Link>
+                    </div>
+                </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                     

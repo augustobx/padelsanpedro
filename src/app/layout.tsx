@@ -28,15 +28,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  let themeClass = '';
-  let themeName = 'light';
+  let themeClass = 'dark';
+  let themeName = 'dark';
   try {
     const settings = await prisma.systemSetting.findFirst({ where: { id: 1 }, select: { theme: true } });
     if (settings?.theme) {
       themeName = settings.theme;
       if (['cyber-padel', 'sunset-clay', 'ocean-frost'].includes(settings.theme)) {
         themeClass = `dark theme-${settings.theme}`;
-      } else if (settings.theme === 'dark') {
+      } else if (settings.theme === 'light') {
+        // Individual tenant pages handle their own light themes explicitly
         themeClass = 'dark';
       }
     }
@@ -49,7 +50,7 @@ export default async function RootLayout({
       data-theme={themeName}
       className={`${geistSans.variable} ${geistMono.variable} ${themeClass} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--background,#f8fafc)] text-[var(--foreground,#0f172a)]">
+      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
         <ConnectivityStatus />
         {children}
       </body>

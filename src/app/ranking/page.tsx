@@ -1,18 +1,20 @@
 import Link from 'next/link';
-import { ArrowLeft, BarChart3, Crown, Medal, Trophy, UserRound } from 'lucide-react';
+import { ArrowLeft, BarChart3, Crown, Medal, Trophy, UserRound, Users } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { getUserSession } from '@/actions/user-auth';
-import PublicNavbar from '@/components/PublicNavbar';
-import { getReadableForeground, normalizeHexColor } from '@/lib/color';
 import { rankingDisplayName, sortRankingEntries } from '@/lib/rankings';
+
+export const metadata = {
+  title: 'Ranking Oficial — Padel San Pedro',
+  description: 'Tabla oficial de posiciones, puntos y categorías de jugadores de pádel de San Pedro.',
+};
 
 export default async function PublicRankingPage() {
   const [settings, session] = await Promise.all([
     prisma.systemSetting.findFirst({ where: { id: 1 } }),
     getUserSession(),
   ]);
-  const primaryColor = normalizeHexColor(settings?.primaryColor, '#10b981');
-  const secondaryColor = normalizeHexColor(settings?.secondaryColor, '#0ea5e9');
+
   const categories = settings?.rankingsEnabled === false ? [] : await prisma.rankingCategory.findMany({
     where: { isPublished: true },
     orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
@@ -24,44 +26,206 @@ export default async function PublicRankingPage() {
   });
 
   return (
-    <div
-      className={`${settings?.theme === 'dark' ? 'dark' : ''} min-h-dvh bg-slate-100 dark:bg-slate-950`}
-      style={{
-        '--color-primary': primaryColor,
-        '--color-primary-foreground': getReadableForeground(primaryColor),
-        '--color-secondary': secondaryColor,
-        '--color-secondary-foreground': getReadableForeground(secondaryColor),
-      } as React.CSSProperties}
-    >
-      <div className="mx-auto min-h-dvh max-w-5xl bg-white shadow-xl dark:bg-slate-900">
-        <PublicNavbar sysSettings={settings} />
-        <header className="relative overflow-hidden bg-slate-950 px-5 py-10 text-white sm:px-10">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--color-primary)]/20 blur-3xl" />
-          <div className="relative">
-            <Link href="/" className="mb-7 inline-flex items-center gap-2 text-sm font-bold text-slate-400 transition hover:text-white"><ArrowLeft className="h-4 w-4" /> Volver al inicio</Link>
-            <div className="flex items-start gap-4"><div className="rounded-2xl bg-[var(--color-primary)] p-3 text-[var(--color-primary-foreground)]"><BarChart3 className="h-8 w-8" /></div><div><p className="text-xs font-black uppercase tracking-[0.24em] text-[var(--color-primary)]">Ranking oficial</p><h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Posiciones por categoría</h1><p className="mt-2 max-w-2xl text-sm text-slate-400">Consultá puntos, partidos y rendimiento actualizado de cada categoría del club.</p></div></div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      {/* Platform Header */}
+      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center gap-2 text-white font-black text-lg tracking-tight hover:opacity-90 transition-opacity">
+              <span>🎾</span>
+              <span>PADEL<span className="text-emerald-400">SANPEDRO</span></span>
+            </Link>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
+              Ranking
+            </span>
           </div>
-        </header>
 
-        <main className="space-y-7 p-4 sm:p-8">
-          {settings?.rankingsEnabled === false ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 p-12 text-center dark:border-slate-700"><BarChart3 className="mx-auto h-12 w-12 text-slate-300" /><h2 className="mt-4 text-xl font-black text-slate-800 dark:text-white">El ranking está temporalmente oculto</h2><p className="mt-1 text-sm text-slate-500">Volvé a consultar más adelante.</p></div>
-          ) : categories.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-slate-300 p-12 text-center dark:border-slate-700"><Trophy className="mx-auto h-12 w-12 text-slate-300" /><h2 className="mt-4 text-xl font-black text-slate-800 dark:text-white">Todavía no hay rankings publicados</h2><p className="mt-1 text-sm text-slate-500">Las nuevas posiciones aparecerán acá cuando estén listas.</p></div>
-          ) : categories.map((category) => {
-            const entries = sortRankingEntries(category.entries, category.sortMode);
-            return (
-              <section key={category.id} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/60 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-black text-slate-900 dark:text-white">{category.name}</h2>{category.description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{category.description}</p>}</div><span className="w-fit rounded-full bg-[var(--color-primary)]/15 px-3 py-1 text-xs font-black text-slate-700 dark:text-slate-200">{entries.length} jugadores</span></div>
-                {entries.length === 0 ? <p className="p-10 text-center text-sm text-slate-500">No hay posiciones cargadas en esta categoría.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead className="border-b border-slate-100 text-[11px] uppercase tracking-widest text-slate-400 dark:border-slate-800"><tr><th className="w-20 px-4 py-3 text-center">Pos.</th><th className="px-4 py-3 text-left">Jugador</th>{category.showPoints && <th className="px-4 py-3 text-center">Pts</th>}{category.showPlayed && <th className="px-4 py-3 text-center">PJ</th>}{category.showWon && <th className="px-4 py-3 text-center">PG</th>}{category.showLost && <th className="px-4 py-3 text-center">PP</th>}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{entries.map((entry, index) => {
-                  const isCurrentUser = Boolean(session?.id && entry.userId === session.id);
-                  return <tr key={entry.id} className={isCurrentUser ? 'bg-[var(--color-primary)]/10' : 'hover:bg-slate-50/70 dark:hover:bg-slate-800/40'}><td className="px-4 py-4 text-center"><span className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full font-black ${index === 0 ? 'bg-amber-400 text-amber-950' : index === 1 ? 'bg-slate-300 text-slate-800' : index === 2 ? 'bg-orange-200 text-orange-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>{index === 0 && <Crown className="absolute -top-2 h-4 w-4 text-amber-500" />}{index < 3 ? <Medal className="h-4 w-4" /> : index + 1}</span></td><td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800"><UserRound className="h-4 w-4" /></span><span><strong className="block text-slate-900 dark:text-white">{rankingDisplayName(entry)}</strong><small className="text-slate-400">{entry.user ? 'Jugador registrado' : 'Participante del club'}{isCurrentUser ? ' · Vos' : ''}</small></span></div></td>{category.showPoints && <td className="px-4 py-4 text-center text-base font-black text-[var(--color-primary)]">{entry.points}</td>}{category.showPlayed && <td className="px-4 py-4 text-center font-semibold text-slate-600 dark:text-slate-300">{entry.matchesPlayed}</td>}{category.showWon && <td className="px-4 py-4 text-center font-bold text-emerald-600">{entry.matchesWon}</td>}{category.showLost && <td className="px-4 py-4 text-center font-bold text-red-500">{entry.matchesLost}</td>}</tr>;
-                })}</tbody></table></div>}
-              </section>
-            );
-          })}
-        </main>
-      </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl transition-all active:scale-95"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Volver a</span> Canchas
+            </Link>
+            <Link
+              href="/comunidad"
+              className="inline-flex items-center gap-1.5 text-xs font-black text-slate-950 bg-emerald-500 hover:bg-emerald-400 px-3 py-1.5 rounded-xl transition-all active:scale-95 shadow-sm"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Comunidad</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {/* Hero Banner */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-slate-800 p-6 sm:p-8 shadow-xl">
+          <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-wider mb-2">
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Ranking Oficial Ciudad de San Pedro</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                Tabla de Posiciones y Rendimiento
+              </h1>
+              <p className="mt-1 text-sm text-slate-400 max-w-xl">
+                Consultá los puntos, partidos jugados y rendimiento actualizado de cada categoría en todos los clubes de la ciudad.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="px-4 py-3 rounded-2xl bg-slate-800/80 border border-slate-700/60 text-center">
+                <div className="text-xl font-black text-amber-400">{categories.length}</div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Categorías</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Categories List */}
+        {settings?.rankingsEnabled === false ? (
+          <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/50 p-12 text-center">
+            <BarChart3 className="mx-auto h-12 w-12 text-slate-600 mb-3" />
+            <h2 className="text-lg font-black text-white">El ranking está temporalmente en mantenimiento</h2>
+            <p className="mt-1 text-sm text-slate-400">Volvé a consultar más adelante.</p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/50 p-12 text-center">
+            <Trophy className="mx-auto h-12 w-12 text-slate-600 mb-3" />
+            <h2 className="text-lg font-black text-white">Todavía no hay rankings publicados</h2>
+            <p className="mt-1 text-sm text-slate-400">Las nuevas posiciones aparecerán acá cuando se carguen los torneos y partidos.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {categories.map((category) => {
+              const entries = sortRankingEntries(category.entries, category.sortMode);
+              return (
+                <section
+                  key={category.id}
+                  className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-lg"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 bg-slate-850 px-5 py-4">
+                    <div>
+                      <h2 className="text-lg font-black text-white flex items-center gap-2">
+                        <span>{category.name}</span>
+                      </h2>
+                      {category.description && (
+                        <p className="mt-0.5 text-xs text-slate-400">{category.description}</p>
+                      )}
+                    </div>
+                    <span className="w-fit rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-400">
+                      {entries.length} {entries.length === 1 ? 'jugador' : 'jugadores'}
+                    </span>
+                  </div>
+
+                  {entries.length === 0 ? (
+                    <p className="p-8 text-center text-sm text-slate-500">
+                      No hay posiciones cargadas en esta categoría aún.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[560px] text-sm">
+                        <thead className="border-b border-slate-800 text-[11px] uppercase tracking-widest text-slate-400 bg-slate-900/60">
+                          <tr>
+                            <th className="w-16 px-4 py-3 text-center">Pos.</th>
+                            <th className="px-4 py-3 text-left">Jugador</th>
+                            {category.showPoints && <th className="px-4 py-3 text-center">Pts</th>}
+                            {category.showPlayed && <th className="px-4 py-3 text-center">PJ</th>}
+                            {category.showWon && <th className="px-4 py-3 text-center">PG</th>}
+                            {category.showLost && <th className="px-4 py-3 text-center">PP</th>}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60">
+                          {entries.map((entry, index) => {
+                            const isCurrentUser = Boolean(session?.id && entry.userId === session.id);
+                            return (
+                              <tr
+                                key={entry.id}
+                                className={`transition-colors ${
+                                  isCurrentUser
+                                    ? 'bg-emerald-500/15 text-white'
+                                    : 'hover:bg-slate-800/50 text-slate-200'
+                                }`}
+                              >
+                                <td className="px-4 py-3.5 text-center">
+                                  <span
+                                    className={`relative inline-flex h-8 w-8 items-center justify-center rounded-xl font-black text-xs ${
+                                      index === 0
+                                        ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/30 ring-2 ring-amber-300'
+                                        : index === 1
+                                        ? 'bg-slate-300 text-slate-950'
+                                        : index === 2
+                                        ? 'bg-amber-700/80 text-white'
+                                        : 'bg-slate-800 text-slate-400 border border-slate-700/50'
+                                    }`}
+                                  >
+                                    {index === 0 ? (
+                                      <>
+                                        <Crown className="absolute -top-2.5 h-3.5 w-3.5 text-amber-300" />
+                                        1
+                                      </>
+                                    ) : index < 3 ? (
+                                      <Medal className="h-4 w-4" />
+                                    ) : (
+                                      index + 1
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <div className="flex items-center gap-3">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold">
+                                      {rankingDisplayName(entry)[0]?.toUpperCase() || <UserRound className="h-4 w-4" />}
+                                    </span>
+                                    <div>
+                                      <strong className="block text-white font-bold leading-tight">
+                                        {rankingDisplayName(entry)}
+                                      </strong>
+                                      <small className="text-[11px] text-slate-400">
+                                        {entry.user ? 'Jugador registrado' : 'Participante'}{isCurrentUser ? ' · Vos' : ''}
+                                      </small>
+                                    </div>
+                                  </div>
+                                </td>
+                                {category.showPoints && (
+                                  <td className="px-4 py-3.5 text-center text-base font-black text-emerald-400">
+                                    {entry.points}
+                                  </td>
+                                )}
+                                {category.showPlayed && (
+                                  <td className="px-4 py-3.5 text-center font-semibold text-slate-300">
+                                    {entry.matchesPlayed}
+                                  </td>
+                                )}
+                                {category.showWon && (
+                                  <td className="px-4 py-3.5 text-center font-bold text-emerald-400">
+                                    {entry.matchesWon}
+                                  </td>
+                                )}
+                                {category.showLost && (
+                                  <td className="px-4 py-3.5 text-center font-bold text-rose-400">
+                                    {entry.matchesLost}
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

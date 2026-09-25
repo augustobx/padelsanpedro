@@ -80,15 +80,15 @@ export default function PostComments({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl px-3 py-2">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                <div className="bg-slate-800 border border-slate-700/60 rounded-2xl px-3.5 py-2.5">
+                  <span className="text-xs font-bold text-white">
                     {`${comment.author.name || ""} ${comment.author.lastName || ""}`.trim()}
                   </span>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 whitespace-pre-wrap">
+                  <p className="text-xs text-slate-300 mt-0.5 whitespace-pre-wrap">
                     {comment.content}
                   </p>
                 </div>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-3 mt-0.5 inline-block">
+                <span className="text-[10px] text-slate-500 ml-3 mt-0.5 inline-block">
                   {formatDistanceToNow(new Date(comment.createdAt), {
                     addSuffix: true,
                     locale: es,
@@ -102,7 +102,7 @@ export default function PostComments({
 
       {/* Comment input */}
       {currentUserId && (
-        <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-2">
+        <div className="px-4 py-3 border-t border-slate-800/80 flex items-center gap-2 bg-slate-900/60">
           <input
             type="text"
             value={content}
@@ -116,12 +116,13 @@ export default function PostComments({
             placeholder="Escribí un comentario..."
             maxLength={500}
             disabled={isPending}
-            className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all"
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-full px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
           />
           <button
             onClick={handleSubmit}
             disabled={!content.trim() || isPending}
-            className="p-2 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white shadow-md shadow-[var(--color-primary)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            className="p-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            title="Enviar comentario"
           >
             {isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

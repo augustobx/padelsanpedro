@@ -76,16 +76,16 @@ export default function PostComposer({
   };
 
   return (
-    <div className="bg-card text-card-foreground rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
+    <div className="bg-slate-900 text-white rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
       <div className="p-4">
         <div className="flex items-start gap-3">
           {/* Avatar */}
           {userAvatar ? (
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative border border-[var(--color-primary)]/25 shadow-sm">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 relative border border-emerald-500/30 shadow-sm">
               <Image src={userAvatar} alt={userName} fill unoptimized className="object-cover" />
             </div>
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex-shrink-0 flex items-center justify-center text-white font-bold text-sm shadow-md">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex-shrink-0 flex items-center justify-center text-slate-950 font-black text-sm shadow-md shadow-emerald-500/15">
               {userInitial}
             </div>
           )}
@@ -101,8 +101,8 @@ export default function PostComposer({
                   handleSubmit();
                 }
               }}
-              placeholder="¿Qué está pasando en la cancha? 🏓"
-              className="w-full resize-none border-0 bg-transparent text-sm text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-0 min-h-[60px]"
+              placeholder="¿Qué está pasando en el pádel de San Pedro? 🎾"
+              className="w-full resize-none border-0 bg-transparent text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-0 min-h-[60px]"
               rows={2}
               maxLength={maxLength}
               disabled={isPending}
@@ -110,7 +110,7 @@ export default function PostComposer({
 
             {/* Preview de la imagen adjunta */}
             {imageUrl && (
-              <div className="relative mt-2 rounded-xl overflow-hidden max-h-56 max-w-sm border border-[var(--border)] bg-slate-950/5">
+              <div className="relative mt-2 rounded-xl overflow-hidden max-h-56 max-w-sm border border-slate-800 bg-slate-950/40">
                 <Image
                   src={imageUrl}
                   alt="Imagen adjunta"
@@ -134,7 +134,7 @@ export default function PostComposer({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 bg-[var(--muted)]/40 border-t border-[var(--border)] flex items-center justify-between">
+      <div className="px-4 py-2.5 bg-slate-950/50 border-t border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <input
             type="file"
@@ -147,13 +147,13 @@ export default function PostComposer({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading || isPending}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-400 hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 text-xs font-semibold transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 text-xs font-semibold transition-all disabled:opacity-50"
             title="Adjuntar foto"
           >
             {isUploading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-[var(--color-primary)]" />
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
             ) : (
-              <ImageIcon className="w-4 h-4 text-[var(--color-primary)]" />
+              <ImageIcon className="w-4 h-4 text-emerald-400" />
             )}
             <span className="hidden sm:inline">Foto</span>
           </button>
@@ -161,8 +161,8 @@ export default function PostComposer({
           <span
             className={`text-[11px] font-medium tabular-nums ${
               content.length > maxLength * 0.9
-                ? "text-red-500"
-                : "text-slate-400 dark:text-slate-500"
+                ? "text-red-400"
+                : "text-slate-500"
             }`}
           >
             {content.length}/{maxLength}
@@ -171,12 +171,12 @@ export default function PostComposer({
 
         <div className="flex items-center gap-2">
           {error && (
-            <span className="text-xs text-red-500 font-medium truncate max-w-[200px]">{error}</span>
+            <span className="text-xs text-red-400 font-medium truncate max-w-[200px]">{error}</span>
           )}
           <button
             onClick={handleSubmit}
             disabled={(!content.trim() && !imageUrl) || isPending || isUploading}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] hover:opacity-90 text-[var(--color-primary-foreground)] text-xs font-bold shadow-md shadow-[var(--color-primary)]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-md shadow-emerald-500/15 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
           >
             {isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

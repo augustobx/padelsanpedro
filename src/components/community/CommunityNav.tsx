@@ -28,8 +28,8 @@ export default function CommunityNav({
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--card)]/90 backdrop-blur-xl border-t border-[var(--border)] safe-area-bottom shadow-lg">
-      <div className="max-w-2xl mx-auto flex items-center justify-around px-2 py-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 safe-area-bottom shadow-xl">
+      <div className="max-w-2xl mx-auto flex items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {
           const isActive =
             item.href === "/comunidad"
@@ -45,11 +45,11 @@ export default function CommunityNav({
               key={item.href}
               href={item.href}
               className={`
-                relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl transition-all duration-200 min-w-[64px]
+                relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-2xl transition-all duration-200 min-w-[64px]
                 ${
                   isActive
-                    ? "bg-[var(--color-primary)]/15 text-[var(--color-primary)] font-bold scale-105"
-                    : "text-slate-400 hover:text-[var(--foreground)] hover:bg-[var(--muted)]/50 active:scale-95"
+                    ? "bg-emerald-500/15 text-emerald-400 font-bold scale-105"
+                    : "text-slate-400 hover:text-white hover:bg-slate-900/60 active:scale-95"
                 }
               `}
             >
@@ -57,28 +57,28 @@ export default function CommunityNav({
                 <item.icon
                   className={`w-5 h-5 transition-all ${
                     isActive
-                      ? "text-[var(--color-primary)] drop-shadow-sm"
+                      ? "text-emerald-400 drop-shadow-sm"
                       : ""
                   }`}
                 />
                 {hasAlert && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-[var(--card)] animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-slate-950 animate-pulse" />
                 )}
                 {hasChatUnread && (
-                  <span className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-[var(--card)] animate-pulse shadow-sm">
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black flex items-center justify-center border-2 border-slate-950 animate-pulse shadow-sm">
                     {unreadMessages > 99 ? "99+" : unreadMessages}
                   </span>
                 )}
               </div>
               <span
                 className={`text-[10px] font-semibold leading-tight ${
-                  isActive ? "text-[var(--color-primary)] font-bold" : ""
+                  isActive ? "text-emerald-400 font-bold" : ""
                 }`}
               >
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]" />
+                <span className="absolute -bottom-0.5 w-6 h-0.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-500/50" />
               )}
             </Link>
           );

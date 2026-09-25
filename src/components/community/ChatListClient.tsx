@@ -35,39 +35,32 @@ export default function ChatListClient({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <MessageCircle className="w-5 h-5 text-violet-500" />
-          Mensajes
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <MessageCircle className="w-5 h-5 text-emerald-400" />
+          Mensajes y Chat
         </h2>
-        {/* Future: New group button */}
-        {/*
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 text-xs font-bold hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-all">
-          <Plus className="w-3.5 h-3.5" />
-          Nuevo grupo
-        </button>
-        */}
       </div>
 
       {/* Conversation list */}
       {conversations.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-16 bg-slate-900 rounded-3xl border border-slate-800 p-8 shadow-sm">
           <div className="text-5xl mb-4">💬</div>
-          <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">
+          <h3 className="text-lg font-bold text-white mb-1">
             Sin mensajes aún
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Buscá jugadores y enviales un mensaje para empezar a chatear
+          <p className="text-sm text-slate-400 max-w-sm mx-auto">
+            Buscá jugadores y enviales un mensaje para empezar a coordinar partidos.
           </p>
           <Link
             href="/comunidad/jugadores"
-            className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] text-white text-sm font-bold shadow-md shadow-[var(--color-primary)]/20 transition-all hover:brightness-105 active:scale-95"
+            className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
           >
             <Users className="w-4 h-4" />
             Buscar jugadores
           </Link>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {conversations.map((conv) => (
             <ConversationCard key={conv.id} conversation={conv} />
           ))}
@@ -84,15 +77,15 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
   return (
     <Link
       href={`/comunidad/chat/${conversation.id}`}
-      className="block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm p-4 transition-all hover:shadow-md hover:border-[var(--color-primary)]/50 active:scale-[0.99]"
+      className="block bg-slate-900 rounded-2xl border border-slate-800 shadow-sm p-4 transition-all hover:shadow-md hover:border-emerald-500/50 hover:bg-slate-850 active:scale-[0.99]"
     >
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div
-          className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold shadow-md bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)]`}
+          className={`w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-slate-950 font-black shadow-md bg-gradient-to-br from-emerald-400 to-teal-500`}
         >
           {isGroup ? (
-            <Users className="w-5 h-5" />
+            <Users className="w-5 h-5 text-slate-950" />
           ) : (
             initial
           )}
@@ -101,11 +94,11 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-0.5">
-            <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
+            <span className="font-bold text-sm text-white truncate">
               {conversation.name || "Chat"}
             </span>
             {conversation.lastMessage && (
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0 ml-2">
+              <span className="text-[10px] text-slate-400 flex-shrink-0 ml-2">
                 {formatDistanceToNow(new Date(conversation.lastMessage.createdAt), {
                   addSuffix: false,
                   locale: es,
@@ -115,18 +108,18 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
           </div>
 
           {conversation.lastMessage ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-xs text-slate-300 truncate">
               {conversation.lastMessage.isMe ? (
-                <span className="text-slate-400 dark:text-slate-500">Vos: </span>
+                <span className="text-slate-400">Vos: </span>
               ) : isGroup && conversation.lastMessage.senderName ? (
-                <span className="text-slate-400 dark:text-slate-500">
+                <span className="text-slate-400">
                   {conversation.lastMessage.senderName}:{" "}
                 </span>
               ) : null}
               {conversation.lastMessage.content}
             </p>
           ) : (
-            <p className="text-xs text-slate-400 dark:text-slate-500 italic">
+            <p className="text-xs text-slate-500 italic">
               Sin mensajes
             </p>
           )}
@@ -134,8 +127,8 @@ function ConversationCard({ conversation }: { conversation: Conversation }) {
 
         {/* Unread badge */}
         {conversation.unreadCount > 0 && (
-          <div className="w-5 h-5 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center flex-shrink-0">
-            <span className="text-[9px] font-bold text-white">
+          <div className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 font-black flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span className="text-[9px]">
               {conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}
             </span>
           </div>
