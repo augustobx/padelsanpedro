@@ -7,6 +7,7 @@ import { registerSaasPayment, updateTenantSuperAdmin } from '@/actions/superadmi
 import { FEATURE_KEYS } from '@/lib/features';
 import { getPlatformSession } from '@/lib/platform-auth';
 import { platformPrisma } from '@/lib/prisma-core';
+import { TenantAdminsClient } from './tenant-admins-client';
 
 const dateValue = (date?: Date | null) => date ? date.toISOString().slice(0, 10) : '';
 const inputClass = 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none';
@@ -16,7 +17,21 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   if (!session) redirect('/superadmin/login');
   const { id } = await params;
   const [tenant, plans] = await Promise.all([
-    platformPrisma.tenant.findUnique({ where: { id }, include: { domains: true, subscriptions: { orderBy: { createdAt: 'desc' }, take: 1, include: { plan: { include: { features: true } } } }, featureOverrides: true, saasPayments: { orderBy: { createdAt: 'desc' }, take: 8 }, _count: { select: { users: true, courts: true, bookings: true } } } }),
+    platformPrisma.tenant.findUnique({
+      where: { id },
+      include: {
+        domains: true,
+        subscriptions: { orderBy: { createdAt: 'desc' }, take: 1, include: { plan: { include: { features: true } } } },
+        featureOverrides: true,
+        saasPayments: { orderBy: { createdAt: 'desc' }, take: 8 },
+        users: {
+          where: { role: 'ADMIN' },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, name: true, email: true, phone: true, dni: true, isActive: true, createdAt: true },
+        },
+        _count: { select: { users: true, courts: true, bookings: true } },
+      },
+    }),
     platformPrisma.plan.findMany({ orderBy: { price: 'asc' } }),
   ]);
   if (!tenant) notFound();
@@ -57,6 +72,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6"><h2 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-2 mb-4"><Layers className="w-4 h-4" />Módulos y Overrides del Tenant</h2><div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">{FEATURE_KEYS.map(key=>{const override=tenant.featureOverrides.find(o=>o.key===key); const enabled=override?.enabled!==false; return <form key={key} action={setFeatureOverride}><input type="hidden" name="tenantId" value={tenant.id}/><input type="hidden" name="key" value={key}/><input type="hidden" name="enabled" value={enabled?'false':'true'}/><button className={`w-full text-left rounded-xl border px-3 py-2 text-xs ${enabled?'bg-emerald-500/5 border-emerald-500/20 text-emerald-300':'bg-red-500/5 border-red-500/20 text-red-300'}`}>{key}{override?' *':''}</button></form>})}</div></div>
       <div className="flex justify-end"><button className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium">Guardar Configuración del Tenant</button></div>
     </form>
+
+    <TenantAdminsClient tenantId={tenant.id} tenantName={tenant.name} admins={tenant.users} />
   </div>;
 }
 

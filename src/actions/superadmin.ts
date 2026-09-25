@@ -154,3 +154,183 @@ export async function registerSaasPayment(formData: FormData) {
   refresh();
   revalidatePath(`/superadmin/tenants/${tenantId}`);
 }
+
+export async function createTenantAdminUser(formData: FormData) {
+  const actor = await requirePlatformAdmin();
+  const tenantId = z.string().uuid().parse(formData.get('tenantId'));
+  const name = z.string().trim().min(2).max(160).parse(formData.get('name'));
+  const email = z.string().trim().email().toLowerCase().parse(formData.get('email'));
+  const phone = String(formData.get('phone') || '').trim() || null;
+  const rawPassword = z.string().min(6).max(128).parse(formData.get('password'));
+
+  const existing = await platformPrisma.user.findFirst({
+    where: { email },
+  });
+  if (existing) {
+    if (existing.tenantId === tenantId && existing.role === 'ADMIN') {
+      throw new Error('Ya existe un administrador con ese correo en este club.');
+    } else if (existing.role === 'ADMIN') {
+      throw new Error('Ese correo ya está registrado como administrador en otro club.');
+    }
+  }
+
+  const password = await bcrypt.hash(rawPassword, 12);
+
+  await platformPrisma.$transaction(async (tx) => {
+    let user;
+    if (existing) {
+      user = await tx.user.update({
+        where: { id: existing.id },
+        data: {
+          tenantId,
+          name,
+          phone: phone || existing.phone,
+          password,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+    } else {
+      user = await tx.user.create({
+        data: {
+          tenantId,
+          name,
+          email,
+          phone,
+          password,
+          role: 'ADMIN',
+          isActive: true,
+        },
+      });
+    }
+
+    await tx.platformAuditLog.create({
+      data: {
+        actorId: actor.userId,
+        tenantId,
+        action: 'TENANT_ADMIN_CREATED',
+        entityType: 'User',
+        entityId: user.id,
+        metadata: { name, email },
+      },
+    });
+  });
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+export async function resetTenantAdminPassword(formData: FormData) {
+  const actor = await requirePlatformAdmin();
+  const tenantId = z.string().uuid().parse(formData.get('tenantId'));
+  const userId = z.string().uuid().parse(formData.get('userId'));
+  const rawPassword = z.string().min(6).max(128).parse(formData.get('newPassword'));
+
+  const user = await platformPrisma.user.findFirst({
+    where: { id: userId, tenantId, role: 'ADMIN' },
+  });
+  if (!user) throw new Error('Usuario administrador no encontrado en este tenant.');
+
+  const password = await bcrypt.hash(rawPassword, 12);
+
+  await platformPrisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: { password },
+    });
+    // Revocar sesiones activas para exigir login con la nueva contraseña
+    await tx.adminSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    await tx.platformAuditLog.create({
+      data: {
+        actorId: actor.userId,
+        tenantId,
+        action: 'TENANT_ADMIN_PASSWORD_RESET',
+        entityType: 'User',
+        entityId: userId,
+        metadata: { email: user.email },
+      },
+    });
+  });
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+export async function toggleTenantAdminStatus(formData: FormData) {
+  const actor = await requirePlatformAdmin();
+  const tenantId = z.string().uuid().parse(formData.get('tenantId'));
+  const userId = z.string().uuid().parse(formData.get('userId'));
+  const isActive = formData.get('isActive') === 'true';
+
+  const user = await platformPrisma.user.findFirst({
+    where: { id: userId, tenantId, role: 'ADMIN' },
+  });
+  if (!user) throw new Error('Usuario administrador no encontrado en este tenant.');
+
+  await platformPrisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data: { isActive },
+    });
+    if (!isActive) {
+      await tx.adminSession.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    }
+    await tx.platformAuditLog.create({
+      data: {
+        actorId: actor.userId,
+        tenantId,
+        action: isActive ? 'TENANT_ADMIN_ACTIVATED' : 'TENANT_ADMIN_DEACTIVATED',
+        entityType: 'User',
+        entityId: userId,
+        metadata: { email: user.email },
+      },
+    });
+  });
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}
+
+export async function deleteTenantAdminUser(formData: FormData) {
+  const actor = await requirePlatformAdmin();
+  const tenantId = z.string().uuid().parse(formData.get('tenantId'));
+  const userId = z.string().uuid().parse(formData.get('userId'));
+
+  const user = await platformPrisma.user.findFirst({
+    where: { id: userId, tenantId, role: 'ADMIN' },
+    include: { _count: { select: { bookings: true } } },
+  });
+  if (!user) throw new Error('Usuario administrador no encontrado en este tenant.');
+
+  await platformPrisma.$transaction(async (tx) => {
+    await tx.adminSession.deleteMany({
+      where: { userId },
+    });
+    if (user._count.bookings > 0) {
+      // Si tiene reservas históricas como jugador, despojar rol admin y desactivar
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: 'PLAYER', isActive: false },
+      });
+    } else {
+      await tx.user.delete({
+        where: { id: userId },
+      });
+    }
+    await tx.platformAuditLog.create({
+      data: {
+        actorId: actor.userId,
+        tenantId,
+        action: 'TENANT_ADMIN_DELETED',
+        entityType: 'User',
+        entityId: userId,
+        metadata: { email: user.email },
+      },
+    });
+  });
+
+  revalidatePath(`/superadmin/tenants/${tenantId}`);
+}

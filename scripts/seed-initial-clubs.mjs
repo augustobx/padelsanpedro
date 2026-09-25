@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
+import bcrypt from 'bcryptjs';
 
 const connectionString = (process.env.DATABASE_URL || '').replace('mysql://', 'mariadb://');
 const prisma = new PrismaClient({ adapter: new PrismaMariaDb(connectionString) });
@@ -97,6 +98,34 @@ async function seed() {
             planId: enterprisePlan.id,
           },
         });
+      }
+
+      const initialAdmins = {
+        'san-pedro-padel': { email: 'admin.sanpedro@padelsanpedro.ar', name: 'Admin San Pedro Padel', phone: '3329-551122' },
+        'mitre-padel': { email: 'admin.mitre@padelsanpedro.ar', name: 'Admin Club Mitre', phone: '3329-663344' },
+        'la-estacion': { email: 'admin.estacion@padelsanpedro.ar', name: 'Admin La Estación', phone: '3329-778899' },
+      };
+
+      const adminData = initialAdmins[club.slug];
+      if (adminData) {
+        const existingAdmin = await prisma.user.findFirst({
+          where: { tenantId: tenant.id, role: 'ADMIN' },
+        });
+        if (!existingAdmin) {
+          const passwordHash = await bcrypt.hash('SanPedro.2026!', 12);
+          await prisma.user.create({
+            data: {
+              tenantId: tenant.id,
+              name: adminData.name,
+              email: adminData.email,
+              phone: adminData.phone,
+              password: passwordHash,
+              role: 'ADMIN',
+              isActive: true,
+            },
+          });
+          console.log(`Created admin user for ${club.slug}: ${adminData.email} (Password: SanPedro.2026!)`);
+        }
       }
 
       await prisma.systemSetting.upsert({

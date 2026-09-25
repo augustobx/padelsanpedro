@@ -10,12 +10,16 @@ const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
-export async function createAdminSession(userId: string) {
-  const tenant = await resolveTenantContext();
+export async function createAdminSession(userId: string, targetTenantId?: string) {
+  let tenantId = targetTenantId;
+  if (!tenantId) {
+    const tenant = await resolveTenantContext();
+    tenantId = tenant.id;
+  }
   const token = randomBytes(32).toString('base64url');
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
   await platformPrisma.adminSession.create({
-    data: { tenantId: tenant.id, userId, tokenHash: hashToken(token), expiresAt },
+    data: { tenantId, userId, tokenHash: hashToken(token), expiresAt },
   });
   (await cookies()).set(ADMIN_COOKIE_NAME, token, {
     httpOnly: true,
@@ -29,13 +33,12 @@ export async function createAdminSession(userId: string) {
 export async function getAdminSession() {
   const token = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
   if (!token) return null;
-  const tenant = await resolveTenantContext();
   const session = await platformPrisma.adminSession.findUnique({
     where: { tokenHash: hashToken(token) },
     include: { user: true, tenant: true },
   });
-  if (!session || session.tenantId !== tenant.id || session.revokedAt || session.expiresAt <= new Date() ||
-      session.tenant.status !== 'ACTIVE' || session.user.role !== 'ADMIN' || !session.user.isActive) return null;
+  if (!session || session.revokedAt || session.expiresAt <= new Date() ||
+      session.tenant?.status !== 'ACTIVE' || session.user.role !== 'ADMIN' || !session.user.isActive) return null;
   return { id: session.id, tenantId: session.tenantId, userId: session.userId, name: session.user.name, email: session.user.email, expiresAt: session.expiresAt };
 }
 
