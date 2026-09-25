@@ -387,10 +387,6 @@ export default function LobbyDirectory({
             <Link href="/login" className="text-slate-400 hover:text-emerald-400 font-semibold transition-colors flex items-center gap-1">
               <Lock className="w-3 h-3" /> Acceso Clubes
             </Link>
-            <span>·</span>
-            <Link href="/superadmin/login" className="text-slate-500 hover:text-slate-300 transition-colors">
-              Plataforma
-            </Link>
           </div>
         </footer>
       </main>
