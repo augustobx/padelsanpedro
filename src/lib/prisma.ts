@@ -6,15 +6,20 @@ import { hasTenantFeature, type FeatureKey } from '@/lib/features';
 
 export { platformPrisma } from '@/lib/prisma-core';
 
-const tenantModels = new Set([
-  'User', 'Court', 'BusinessHour', 'Booking', 'FixedBooking', 'CourtBlock',
-  'PushSubscription', 'Expense', 'Setting', 'Tournament', 'TournamentCategory',
-  'TournamentTeam', 'TournamentGroup', 'TournamentGroupTeam', 'TournamentMatch',
-  'RankingCategory', 'RankingEntry', 'PlayerCategoryLevel',
-  'PlayerCategoryAssignment', 'SystemSetting',
+const globalModels = new Set([
+  'User', 'UserSession',
   'Post', 'PostLike', 'PostComment',
   'ChatConversation', 'ChatParticipant', 'ChatMessage',
   'CommunityNotification', 'OpenMatch', 'OpenMatchPlayer',
+  'RankingCategory', 'RankingEntry',
+  'PlayerCategoryLevel', 'PlayerCategoryAssignment',
+]);
+
+const tenantModels = new Set([
+  'Court', 'BusinessHour', 'Booking', 'FixedBooking', 'CourtBlock',
+  'PushSubscription', 'Expense', 'Setting', 'Tournament', 'TournamentCategory',
+  'TournamentTeam', 'TournamentGroup', 'TournamentGroupTeam', 'TournamentMatch',
+  'SystemSetting',
 ]);
 
 const modelFeatures: Record<string, FeatureKey> = {
@@ -23,37 +28,21 @@ const modelFeatures: Record<string, FeatureKey> = {
   PushSubscription: 'push', Expense: 'expenses',
   Tournament: 'tournaments', TournamentCategory: 'tournaments', TournamentTeam: 'tournaments',
   TournamentGroup: 'tournaments', TournamentGroupTeam: 'tournaments', TournamentMatch: 'tournaments',
-  RankingCategory: 'rankings', RankingEntry: 'rankings',
-  PlayerCategoryLevel: 'player_categories', PlayerCategoryAssignment: 'player_categories',
-  Post: 'community', PostLike: 'community', PostComment: 'community',
-  ChatConversation: 'community', ChatParticipant: 'community', ChatMessage: 'community',
-  CommunityNotification: 'community', OpenMatch: 'community', OpenMatchPlayer: 'community',
 };
 
 const relationOwnership: Record<string, Record<string, string>> = {
-  Booking: { courtId: 'court', userId: 'user', fixedBookingId: 'fixedBooking' },
+  Booking: { courtId: 'court', fixedBookingId: 'fixedBooking' },
   BusinessHour: { courtId: 'court' },
-  FixedBooking: { courtId: 'court', userId: 'user' },
+  FixedBooking: { courtId: 'court' },
   CourtBlock: { courtId: 'court' },
-  PushSubscription: { userId: 'user' },
   TournamentCategory: { tournamentId: 'tournament' },
-  TournamentTeam: { categoryId: 'tournamentCategory', player1Id: 'user', player2Id: 'user' },
+  TournamentTeam: { categoryId: 'tournamentCategory' },
   TournamentGroup: { categoryId: 'tournamentCategory' },
   TournamentGroupTeam: { groupId: 'tournamentGroup', teamId: 'tournamentTeam' },
   TournamentMatch: {
     categoryId: 'tournamentCategory', groupId: 'tournamentGroup', nextMatchId: 'tournamentMatch',
     team1Id: 'tournamentTeam', team2Id: 'tournamentTeam', winnerId: 'tournamentTeam', courtId: 'court',
   },
-  RankingEntry: { categoryId: 'rankingCategory', userId: 'user' },
-  PlayerCategoryAssignment: { levelId: 'playerCategoryLevel', userId: 'user' },
-  Post: { authorId: 'user' },
-  PostLike: { postId: 'post', userId: 'user' },
-  PostComment: { postId: 'post', authorId: 'user' },
-  ChatParticipant: { conversationId: 'chatConversation', userId: 'user' },
-  ChatMessage: { conversationId: 'chatConversation', senderId: 'user' },
-  CommunityNotification: { userId: 'user' },
-  OpenMatch: { creatorId: 'user', bookingId: 'booking', courtId: 'court' },
-  OpenMatchPlayer: { matchId: 'openMatch', userId: 'user' },
 };
 
 const readOperations = new Set([
@@ -129,6 +118,15 @@ export const prisma = platformPrisma.$extends({
   query: {
     $allModels: {
       async $allOperations({ model, operation, args, query }) {
+        if (model && globalModels.has(model)) {
+          const delegateName = model.charAt(0).toLowerCase() + model.slice(1);
+          const delegate = (platformPrisma as unknown as Record<string, any>)[delegateName];
+          if (delegate && typeof delegate[operation] === 'function') {
+            return delegate[operation](args);
+          }
+          return (query as any)(args);
+        }
+
         if (!model || !tenantModels.has(model)) {
           throw new Error(`PLATFORM_MODEL_REQUIRES_PLATFORM_CLIENT:${model || 'raw'}`);
         }

@@ -337,17 +337,18 @@ model AdminSession {
 
 model UserSession {
   id        String    @id @default(uuid())
-  tenantId  String    @default("")
+  tenantId  String?
   userId    String
   tokenHash String    @unique(map: "UserSession_tokenHash_key") @db.Char(64)
   expiresAt DateTime
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "UserSession_tenantId_fkey")
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "UserSession_tenantId_fkey")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "UserSession_userId_fkey")
 
-  @@index([tenantId, userId, expiresAt], map: "UserSession_tenantId_userId_expiresAt_idx")
+  @@index([userId, expiresAt], map: "UserSession_userId_expiresAt_idx")
+  @@index([tenantId], map: "UserSession_tenantId_idx")
   @@map("usersession")
 }
 
@@ -356,7 +357,7 @@ model UserSession {
 // ==========================================
 model User {
   id       String  @id @default(uuid())
-  tenantId String  @default("")
+  tenantId String?
   email    String? // Made optional in case they register by DNI only
   dni      String?
   password String?
@@ -396,15 +397,15 @@ model User {
   createdOpenMatches        OpenMatch[]                @relation("OpenMatchCreator")
   joinedOpenMatches         OpenMatchPlayer[]
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "User_tenantId_fkey")
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "User_tenantId_fkey")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([tenantId, email], map: "User_tenantId_email_key")
-  @@unique([tenantId, dni], map: "User_tenantId_dni_key")
+  @@unique([dni], map: "User_dni_key")
+  @@unique([email], map: "User_email_key")
   @@index([tenantId, role, isActive], map: "User_tenantId_role_isActive_idx")
-  @@index([tenantId, lookingForPartner, isProfilePublic], map: "User_tenantId_looking_public_idx")
+  @@index([lookingForPartner, isProfilePublic], map: "User_looking_public_idx")
   @@map("user")
 }
 
@@ -708,7 +709,7 @@ model TournamentMatch {
 // ==========================================
 model RankingCategory {
   id           String          @id @default(uuid())
-  tenantId     String          @default("")
+  tenantId     String?
   name         String
   description  String?         @db.Text
   isPublished  Boolean         @default(true)
@@ -721,15 +722,16 @@ model RankingCategory {
   entries      RankingEntry[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
-  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "RankingCategory_tenantId_fkey")
+  tenant       Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "RankingCategory_tenantId_fkey")
 
   @@index([tenantId, isPublished, displayOrder], map: "RankingCategory_tenant_published_order_idx")
+  @@index([isPublished, displayOrder], map: "RankingCategory_published_order_idx")
   @@map("rankingcategory")
 }
 
 model RankingEntry {
   id             String          @id @default(uuid())
-  tenantId       String          @default("")
+  tenantId       String?
   categoryId     String
   category       RankingCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade, map: "RankingEntry_categoryId_fkey")
   userId         String?
@@ -744,11 +746,12 @@ model RankingEntry {
   notes          String?         @db.Text
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "RankingEntry_tenantId_fkey")
+  tenant         Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "RankingEntry_tenantId_fkey")
 
-  @@unique([tenantId, categoryId, userId], map: "RankingEntry_tenant_category_user_key")
-  @@index([tenantId, categoryId, points], map: "RankingEntry_tenant_category_points_idx")
-  @@index([tenantId, categoryId, manualPosition], map: "RankingEntry_tenant_category_manual_idx")
+  @@unique([categoryId, userId], map: "RankingEntry_category_user_key")
+  @@index([categoryId, points], map: "RankingEntry_category_points_idx")
+  @@index([categoryId, manualPosition], map: "RankingEntry_category_manual_idx")
+  @@index([tenantId], map: "RankingEntry_tenantId_idx")
   @@map("rankingentry")
 }
 
@@ -758,7 +761,7 @@ model RankingEntry {
 // ==========================================
 model PlayerCategoryLevel {
   id           String                     @id @default(uuid())
-  tenantId     String                     @default("")
+  tenantId     String?
   name         String
   description  String?                    @db.Text
   color        String                     @default("#10b981")
@@ -767,16 +770,16 @@ model PlayerCategoryLevel {
   assignments  PlayerCategoryAssignment[]
   createdAt    DateTime                   @default(now())
   updatedAt    DateTime                   @updatedAt
-  tenant       Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PlayerCategoryLevel_tenantId_fkey")
+  tenant       Tenant?                    @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PlayerCategoryLevel_tenantId_fkey")
 
-  @@unique([tenantId, name], map: "PlayerCategoryLevel_tenantId_name_key")
-  @@index([tenantId, isPublished, displayOrder], map: "PlayerCategoryLevel_tenant_published_order_idx")
+  @@unique([name], map: "PlayerCategoryLevel_name_key")
+  @@index([isPublished, displayOrder], map: "PlayerCategoryLevel_published_order_idx")
   @@map("playercategorylevel")
 }
 
 model PlayerCategoryAssignment {
   id            String              @id @default(uuid())
-  tenantId      String              @default("")
+  tenantId      String?
   levelId       String
   level         PlayerCategoryLevel @relation(fields: [levelId], references: [id], onDelete: Restrict, map: "PlayerCategoryAssignment_levelId_fkey")
   userId        String?
@@ -787,11 +790,11 @@ model PlayerCategoryAssignment {
   isPublished   Boolean             @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
-  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PlayerCategoryAssignment_tenantId_fkey")
+  tenant        Tenant?             @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PlayerCategoryAssignment_tenantId_fkey")
 
-  @@unique([tenantId, userId], map: "PlayerCategoryAssignment_tenantId_userId_key")
-  @@index([tenantId, levelId, isPublished], map: "PlayerCategoryAssignment_tenant_level_published_idx")
-  @@index([tenantId, externalName], map: "PlayerCategoryAssignment_tenant_externalName_idx")
+  @@unique([userId], map: "PlayerCategoryAssignment_userId_key")
+  @@index([levelId, isPublished], map: "PlayerCategoryAssignment_level_published_idx")
+  @@index([externalName], map: "PlayerCategoryAssignment_externalName_idx")
   @@map("playercategoryassignment")
 }
 
@@ -870,7 +873,7 @@ model SystemSetting {
 // ==========================================
 model Post {
   id        String   @id @default(uuid())
-  tenantId  String   @default("")
+  tenantId  String?
   authorId  String
   content   String   @db.Text
   imageUrl  String?  @db.VarChar(500)
@@ -881,67 +884,70 @@ model Post {
   updatedAt DateTime @updatedAt
 
   author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade, map: "Post_authorId_fkey")
-  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "Post_tenantId_fkey")
+  tenant   Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "Post_tenantId_fkey")
   likes    PostLike[]
   comments PostComment[]
 
-  @@index([tenantId, isActive, isPinned, createdAt], map: "Post_tenant_active_pinned_created_idx")
-  @@index([tenantId, authorId], map: "Post_tenant_author_idx")
+  @@index([isActive, isPinned, createdAt], map: "Post_active_pinned_created_idx")
+  @@index([authorId], map: "Post_author_idx")
+  @@index([tenantId], map: "Post_tenant_idx")
   @@map("post")
 }
 
 model PostLike {
   id        String   @id @default(uuid())
-  tenantId  String   @default("")
+  tenantId  String?
   postId    String
   userId    String
   createdAt DateTime @default(now())
 
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade, map: "PostLike_postId_fkey")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PostLike_userId_fkey")
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PostLike_tenantId_fkey")
+  post   Post    @relation(fields: [postId], references: [id], onDelete: Cascade, map: "PostLike_postId_fkey")
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PostLike_userId_fkey")
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PostLike_tenantId_fkey")
 
-  @@unique([tenantId, postId, userId], map: "PostLike_tenant_post_user_key")
+  @@unique([postId, userId], map: "PostLike_post_user_key")
   @@map("postlike")
 }
 
 model PostComment {
   id        String   @id @default(uuid())
-  tenantId  String   @default("")
+  tenantId  String?
   postId    String
   authorId  String
   content   String   @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade, map: "PostComment_postId_fkey")
-  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade, map: "PostComment_authorId_fkey")
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PostComment_tenantId_fkey")
+  post   Post    @relation(fields: [postId], references: [id], onDelete: Cascade, map: "PostComment_postId_fkey")
+  author User    @relation(fields: [authorId], references: [id], onDelete: Cascade, map: "PostComment_authorId_fkey")
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "PostComment_tenantId_fkey")
 
-  @@index([tenantId, postId, createdAt], map: "PostComment_tenant_post_created_idx")
+  @@index([postId, createdAt], map: "PostComment_post_created_idx")
+  @@index([tenantId], map: "PostComment_tenant_idx")
   @@map("postcomment")
 }
 
 model ChatConversation {
   id        String           @id @default(uuid())
-  tenantId  String           @default("")
+  tenantId  String?
   type      ConversationType @default(DIRECT)
   name      String?          @db.VarChar(120)
   imageUrl  String?          @db.VarChar(500)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatConversation_tenantId_fkey")
+  tenant       Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatConversation_tenantId_fkey")
   participants ChatParticipant[]
   messages     ChatMessage[]
 
-  @@index([tenantId, type, updatedAt], map: "ChatConversation_tenant_type_updated_idx")
+  @@index([type, updatedAt], map: "ChatConversation_type_updated_idx")
+  @@index([tenantId], map: "ChatConversation_tenant_idx")
   @@map("chatconversation")
 }
 
 model ChatParticipant {
   id             String    @id @default(uuid())
-  tenantId       String    @default("")
+  tenantId       String?
   conversationId String
   userId         String
   role           String    @default("MEMBER") @db.VarChar(20)
@@ -951,16 +957,16 @@ model ChatParticipant {
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, map: "ChatParticipant_conversationId_fkey")
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ChatParticipant_userId_fkey")
-  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatParticipant_tenantId_fkey")
+  tenant       Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatParticipant_tenantId_fkey")
 
-  @@unique([tenantId, conversationId, userId], map: "ChatParticipant_tenant_conv_user_key")
-  @@index([tenantId, userId], map: "ChatParticipant_tenant_user_idx")
+  @@unique([conversationId, userId], map: "ChatParticipant_conv_user_key")
+  @@index([userId], map: "ChatParticipant_user_idx")
   @@map("chatparticipant")
 }
 
 model ChatMessage {
   id             String   @id @default(uuid())
-  tenantId       String   @default("")
+  tenantId       String?
   conversationId String
   senderId       String
   content        String   @db.Text
@@ -970,15 +976,16 @@ model ChatMessage {
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, map: "ChatMessage_conversationId_fkey")
   sender       User             @relation(fields: [senderId], references: [id], onDelete: Cascade, map: "ChatMessage_senderId_fkey")
-  tenant       Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatMessage_tenantId_fkey")
+  tenant       Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "ChatMessage_tenantId_fkey")
 
-  @@index([tenantId, conversationId, createdAt], map: "ChatMessage_tenant_conv_created_idx")
+  @@index([conversationId, createdAt], map: "ChatMessage_conv_created_idx")
+  @@index([tenantId], map: "ChatMessage_tenant_idx")
   @@map("chatmessage")
 }
 
 model CommunityNotification {
   id        String   @id @default(uuid())
-  tenantId  String   @default("")
+  tenantId  String?
   userId    String
   type      String   @db.VarChar(40)
   title     String   @db.VarChar(255)
@@ -987,16 +994,17 @@ model CommunityNotification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CommunityNotification_userId_fkey")
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "CommunityNotification_tenantId_fkey")
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CommunityNotification_userId_fkey")
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "CommunityNotification_tenantId_fkey")
 
-  @@index([tenantId, userId, isRead, createdAt], map: "CommunityNotification_tenant_user_read_created_idx")
+  @@index([userId, isRead, createdAt], map: "CommunityNotification_user_read_created_idx")
+  @@index([tenantId], map: "CommunityNotification_tenant_idx")
   @@map("communitynotification")
 }
 
 model OpenMatch {
   id              String            @id @default(uuid())
-  tenantId        String            @default("")
+  tenantId        String?
   bookingId       String?
   creatorId       String
   courtId         String?
@@ -1012,28 +1020,30 @@ model OpenMatch {
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "OpenMatch_tenantId_fkey")
+  tenant          Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "OpenMatch_tenantId_fkey")
   creator         User              @relation("OpenMatchCreator", fields: [creatorId], references: [id], onDelete: Cascade, map: "OpenMatch_creatorId_fkey")
   booking         Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull, map: "OpenMatch_bookingId_fkey")
   players         OpenMatchPlayer[]
 
-  @@index([tenantId, status, date], map: "OpenMatch_tenant_status_date_idx")
-  @@index([tenantId, creatorId], map: "OpenMatch_tenant_creator_idx")
+  @@index([status, date], map: "OpenMatch_status_date_idx")
+  @@index([creatorId], map: "OpenMatch_creator_idx")
+  @@index([tenantId], map: "OpenMatch_tenant_idx")
   @@map("openmatch")
 }
 
 model OpenMatchPlayer {
   id        String    @id @default(uuid())
-  tenantId  String    @default("")
+  tenantId  String?
   matchId   String
   userId    String
   joinedAt  DateTime  @default(now())
 
   match     OpenMatch @relation(fields: [matchId], references: [id], onDelete: Cascade, map: "OpenMatchPlayer_matchId_fkey")
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "OpenMatchPlayer_userId_fkey")
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "OpenMatchPlayer_tenantId_fkey")
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade, map: "OpenMatchPlayer_tenantId_fkey")
 
-  @@unique([tenantId, matchId, userId], map: "OpenMatchPlayer_tenant_match_user_key")
-  @@index([tenantId, userId], map: "OpenMatchPlayer_tenant_user_idx")
+  @@unique([matchId, userId], map: "OpenMatchPlayer_match_user_key")
+  @@index([userId], map: "OpenMatchPlayer_user_idx")
+  @@index([tenantId], map: "OpenMatchPlayer_tenant_idx")
   @@map("openmatchplayer")
 }

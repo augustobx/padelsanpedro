@@ -12,7 +12,14 @@ export type FeatureKey = typeof FEATURE_KEYS[number];
 const cache = new Map<string, { expiresAt: number; enabled: boolean }>();
 
 export async function hasTenantFeature(key: FeatureKey) {
-  const tenant = await resolveTenantContext();
+  let tenant;
+  try {
+    tenant = await resolveTenantContext();
+  } catch {
+    // Platform / city-wide level (Padel San Pedro): features are enabled by default
+    return true;
+  }
+
   const cacheKey = `${tenant.id}:${key}`;
   const hit = cache.get(cacheKey);
   if (hit && hit.expiresAt > Date.now()) return hit.enabled;

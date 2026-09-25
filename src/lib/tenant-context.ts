@@ -72,6 +72,33 @@ export async function findTenant(hostname: string): Promise<TenantContext | null
   return toContext(tenant, hostname);
 }
 
+import { cookies } from 'next/headers';
+
+export async function getSelectedClubSlug(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get('padelsanpedro_active_club')?.value || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveTenantBySlug(slug: string): Promise<TenantContext> {
+  const tenant = await platformPrisma.tenant.findUnique({
+    where: { slug: slug.toLowerCase().trim() },
+  });
+  if (!tenant || tenant.status === 'ARCHIVED') throw new TenantResolutionError();
+  if (tenant.status !== 'ACTIVE') throw new TenantResolutionError('TENANT_SUSPENDED');
+  await syncTenantMembership(tenant.id);
+  return {
+    id: tenant.id,
+    slug: tenant.slug,
+    name: tenant.name,
+    hostname: `${tenant.slug}.${BASE_DOMAIN}`,
+    timezone: tenant.timezone,
+  };
+}
+
 export async function resolveTenantContext(): Promise<TenantContext> {
   const trustedTenantId = process.env.ONLYPADEL_TENANT_ID;
   if (trustedTenantId) {
@@ -85,6 +112,16 @@ export async function resolveTenantContext(): Promise<TenantContext> {
       hostname: `${tenant.slug}.${BASE_DOMAIN}`,
       timezone: tenant.timezone,
     };
+  }
+
+  // Verificar si hay un club activo seleccionado en el Lobby de Padel San Pedro
+  const activeSlug = await getSelectedClubSlug();
+  if (activeSlug) {
+    try {
+      return await resolveTenantBySlug(activeSlug);
+    } catch {
+      // Si el slug de la cookie no es válido, continuar con la resolución por hostname
+    }
   }
 
   const hostname = await getRequestHostname();

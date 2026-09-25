@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OnlyPadel - Gestión integral de clubes",
-  description: "Plataforma SaaS para reservas, socios, canchas, rankings y torneos de pádel.",
+  title: "PadelSanPedro — App Multicancha & Comunidad",
+  description: "Todas las canchas de pádel de San Pedro en una sola app: reservas de turnos, partidos abiertos, torneos y ranking oficial.",
   manifest: "/manifest.json",
 };
 

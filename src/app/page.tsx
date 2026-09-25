@@ -19,24 +19,37 @@ import { getUnreadMessagesCount } from "@/actions/community-chat";
 import CommunityFeedTicker from "@/components/community/CommunityFeedTicker";
 import { hasTenantFeature } from "@/lib/features";
 
+import { getPublicClubs } from "@/actions/clubs";
+import LobbyDirectory from "@/components/lobby/LobbyDirectory";
+
 export default async function HomePage() {
-    if (await isPlatformRequest()) {
-        return (
-            <main className="min-h-screen bg-slate-950 text-white grid place-items-center p-6">
-                <div className="max-w-3xl text-center">
-                    <p className="text-emerald-400 font-black tracking-[0.3em] text-sm">ONLYPADEL</p>
-                    <h1 className="text-5xl md:text-7xl font-black mt-5">Tu club, completamente online.</h1>
-                    <p className="text-slate-400 text-lg md:text-xl mt-6">Reservas, socios, torneos, rankings y operación diaria en una plataforma SaaS segura para cada club.</p>
-                    <Link href="/superadmin/login" className="inline-block mt-9 rounded-2xl bg-emerald-500 px-7 py-4 font-black text-slate-950">Acceso de plataforma</Link>
-                </div>
-            </main>
-        );
+    let tenant = null;
+    const isPlatform = await isPlatformRequest();
+
+    if (!isPlatform) {
+        try {
+            tenant = await resolveTenantContext();
+        } catch (error) {
+            if (error instanceof TenantResolutionError && error.message === 'TENANT_SUSPENDED') {
+                redirect('/suspendido');
+            }
+            // Si el subdominio no existe o es inválido, mostramos el Lobby principal
+        }
     }
-    try {
-        await resolveTenantContext();
-    } catch (error) {
-        if (error instanceof TenantResolutionError && error.message === 'TENANT_SUSPENDED') redirect('/suspendido');
-        notFound();
+
+    // Si es la plataforma o el portal general de Padel San Pedro, renderizamos el Lobby
+    if (isPlatform || !tenant) {
+        const [clubs, session] = await Promise.all([
+            getPublicClubs(),
+            getUserSession(),
+        ]);
+
+        return (
+            <LobbyDirectory
+                clubs={clubs}
+                session={session}
+            />
+        );
     }
     const pubReq = await getPublicTournaments();
     const activeTournament = pubReq.data?.find(t => t.status !== 'COMPLETED');
