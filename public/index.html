@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang=" es\>
+<head>
+ <meta charset=\UTF-8\>
+ <meta name=\viewport\ content=\width=device-width initial-scale=1.0 maximum-scale=1.0 user-scalable=no viewport-fit=cover\>
+ <title>Padel San Pedro</title>
+ <meta name=\theme-color\ content=\#020617\>
+ <style>
+ * { margin: 0; padding: 0; box-sizing: border-box; }
+ body {
+ background: #020617;
+ color: #f8fafc;
+ font-family: system-ui, -apple-system, BlinkMacSystemFont, \Segoe UI\, Roboto, sans-serif;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ min-height: 100vh;
+ text-align: center;
+ padding: 24px;
+ }
+ .logo-container {
+ width: 96px;
+ height: 96px;
+ border-radius: 24px;
+ overflow: hidden;
+ margin-bottom: 24px;
+ border: 1px solid rgba(16, 185, 129, 0.4);
+ box-shadow: 0 20px 40px -10px rgba(16, 185, 129, 0.3);
+ animation: pulse 2s infinite ease-in-out;
+ }
+ .logo-container img { width: 100%; height: 100%; object-fit: cover; }
+ h1 { font-size: 24px; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 8px; }
+ h1 span { color: #10b981; }
+ p { color: #64748b; font-size: 13px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+ .spinner {
+ margin-top: 32px;
+ width: 28px;
+ height: 28px;
+ border: 3px solid rgba(16, 185, 129, 0.2);
+ border-top-color: #10b981;
+ border-radius: 50%;
+ animation: spin 0.8s linear infinite;
+ }
+ @keyframes spin { to { transform: rotate(360deg); } }
+ @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.03); opacity: 0.95; } }
+ </style>
+</head>
+<body>
+ <div class=\logo-container\>
+ <img src=\/icons/icon-192x192.png\ alt=\Padel San Pedro\ />
+ </div>
+ <h1>PADEL<span>SANPEDRO</span></h1>
+ <p>Cargando aplicación...</p>
+ <div class=\spinner\></div>
+</body>
+</html>
