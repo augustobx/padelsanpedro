@@ -9,10 +9,24 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const { subscription } = data;
+    const { subscription, token, platform } = data;
 
-    if (!subscription || !subscription.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) {
-      return NextResponse.json({ error: 'Missing required push subscription fields' }, { status: 400 });
+    let endpoint = '';
+    let p256dh = '';
+    let auth = '';
+
+    if (token && typeof token === 'string') {
+      // Token nativo de Firebase Cloud Messaging (Android APK / iOS)
+      endpoint = token.trim();
+      p256dh = 'fcm';
+      auth = platform || 'ANDROID_NATIVE';
+    } else if (subscription && subscription.endpoint) {
+      // Suscripción Web Push estándar (VAPID)
+      endpoint = subscription.endpoint;
+      p256dh = subscription.keys?.p256dh || 'web';
+      auth = subscription.keys?.auth || 'web';
+    } else {
+      return NextResponse.json({ error: 'Faltan campos obligatorios para registrar push' }, { status: 400 });
     }
 
     // Identificar el usuario (Admin o Jugador de la sesión)
@@ -24,11 +38,11 @@ export async function POST(req: Request) {
       userId = await readUserSessionId();
     }
 
-    // Si aún no hay sesión, asociar con un usuario jugador base o el primer usuario disponible
+    // Si aún no hay sesión, asociar con el primer usuario jugador activo
     if (!userId) {
       const fallbackUser = await platformPrisma.user.findFirst({
         where: { isActive: true },
-        select: { id: true }
+        select: { id: true },
       });
       userId = fallbackUser?.id || null;
     }
@@ -49,7 +63,7 @@ export async function POST(req: Request) {
     if (!tenantId) {
       const defaultTenant = await platformPrisma.tenant.findFirst({
         where: { status: 'ACTIVE' },
-        select: { id: true }
+        select: { id: true },
       });
       tenantId = defaultTenant?.id || '';
     }
@@ -60,22 +74,22 @@ export async function POST(req: Request) {
 
     // Guardar o actualizar la suscripción
     await platformPrisma.pushSubscription.deleteMany({
-      where: { endpoint: subscription.endpoint }
+      where: { endpoint },
     });
 
     await platformPrisma.pushSubscription.create({
       data: {
         userId,
         tenantId,
-        endpoint: subscription.endpoint,
-        p256dh: subscription.keys.p256dh,
-        auth: subscription.keys.auth,
-      }
+        endpoint,
+        p256dh,
+        auth,
+      },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, platform: p256dh === 'fcm' ? 'ANDROID_NATIVE' : 'WEB' });
   } catch (error: any) {
-    console.error('Error saving push subscription:', error);
+    console.error('[API Push Subscribe] Error saving subscription:', error);
     return NextResponse.json({ error: error?.message || 'Internal server error' }, { status: 500 });
   }
 }

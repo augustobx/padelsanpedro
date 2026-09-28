@@ -20,6 +20,7 @@
     "@capacitor/android": "^7.6.9",
     "@capacitor/cli": "^7.6.9",
     "@capacitor/core": "^7.6.9",
+    "@capacitor/push-notifications": "7.0.7",
     "@prisma/adapter-mariadb": "7.10.0",
     "@prisma/client": "7.10.0",
     "@types/web-push": "^3.6.4",

@@ -8,6 +8,7 @@ import {
   unsubscribeUserFromPush,
   triggerHaptic,
   detectPlatform,
+  setupNativePushListeners,
 } from './client';
 import { playChime } from './sound';
 import { InAppNotificationItem, PlatformDevice } from './types';
@@ -42,9 +43,14 @@ export function useNanoNotifications() {
   useEffect(() => {
     const supp = isPushSupported();
     setIsSupported(supp);
-    setPlatform(detectPlatform());
+    const plat = detectPlatform();
+    setPlatform(plat);
 
-    if (supp) {
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
+      setupNativePushListeners().then((ok) => {
+        if (ok) setIsSubscribed(true);
+      });
+    } else if (supp) {
       getExistingPushSubscription().then((sub) => {
         setIsSubscribed(Boolean(sub));
       });

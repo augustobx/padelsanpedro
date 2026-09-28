@@ -1,6 +1,7 @@
 import webpush from 'web-push';
 import { platformPrisma } from '@/lib/prisma-core';
 import { NanoNotificationPayload, NanoNotificationType } from './types';
+import { sendNativeFcmPush } from './fcm';
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
@@ -82,6 +83,11 @@ export async function sendPushToSubscription(
   sub: { id?: string; endpoint: string; p256dh: string; auth: string },
   payload: NanoNotificationPayload
 ): Promise<boolean> {
+  // Si es una suscripción nativa de FCM (Android APK / iOS)
+  if (sub.p256dh === 'fcm' || !sub.endpoint.startsWith('http')) {
+    return await sendNativeFcmPush(sub.endpoint, payload, sub.id);
+  }
+
   if (!ensureVapidConfig()) {
     console.warn('[NanoNotifications] VAPID keys no configuradas, omitiendo push.');
     return false;

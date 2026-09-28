@@ -51,14 +51,30 @@ export function detectPlatform(): PlatformDevice {
 }
 
 /**
- * Verifica si el dispositivo actual soporta notificaciones push nativas
+ * Helper dinámico para obtener el plugin de PushNotifications de Capacitor
+ */
+async function getCapacitorPush() {
+  if (typeof window === 'undefined') return null;
+  const isCapacitor = Boolean((window as any).Capacitor?.isNativePlatform?.());
+  if (!isCapacitor) return null;
+
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    return PushNotifications;
+  } catch {
+    return (window as any).Capacitor?.Plugins?.PushNotifications || null;
+  }
+}
+
+/**
+ * Verifica si el dispositivo actual soporta notificaciones push
  */
 export function isPushSupported(): boolean {
   if (typeof window === 'undefined') return false;
 
-  // Si corre en Capacitor Native (APK)
+  // Si corre en Capacitor Native (APK / iOS Nativo)
   if ((window as any).Capacitor?.isNativePlatform?.()) {
-    return Boolean((window as any).Capacitor?.Plugins?.PushNotifications);
+    return true;
   }
 
   // W3C Web Push (PWA y Navegadores modernos)
@@ -111,38 +127,114 @@ export async function getExistingPushSubscription(): Promise<PushSubscription | 
   }
 }
 
+let nativeListenersRegistered = false;
+
+/**
+ * Configura canales y listeners nativos para Android APK / iOS
+ */
+export async function setupNativePushListeners(): Promise<boolean> {
+  const PushNotifications = await getCapacitorPush();
+  if (!PushNotifications) return false;
+
+  if (nativeListenersRegistered) return true;
+  nativeListenersRegistered = true;
+
+  try {
+    // 1. Crear canal de alta prioridad para Android 8+
+    await PushNotifications.createChannel({
+      id: 'liberated_slots',
+      name: 'Turnos Liberados',
+      description: 'Avisos en vivo de turnos liberados y novedades urgentes',
+      importance: 5, // IMPORTANCE_HIGH (banner flotante + sonido)
+      visibility: 1, // VISIBILITY_PUBLIC
+      sound: 'default',
+      vibration: true,
+      lights: true,
+      lightColor: '#10b981',
+    });
+
+    // 2. Listener de registro exitoso (FCM Device Token)
+    PushNotifications.addListener('registration', async (token: { value: string }) => {
+      console.log('[Native FCM] Token recibido:', token.value);
+      try {
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token.value,
+            platform: 'ANDROID_NATIVE',
+          }),
+        });
+      } catch (err) {
+        console.error('[Native FCM] Error enviando token al backend:', err);
+      }
+    });
+
+    // 3. Listener de error de registro
+    PushNotifications.addListener('registrationError', (error: any) => {
+      console.error('[Native FCM] Error de registro:', error);
+    });
+
+    // 4. Listener cuando llega notificación en primer plano
+    PushNotifications.addListener('pushNotificationReceived', (notification: any) => {
+      console.log('[Native FCM] Notificación recibida en foreground:', notification);
+      playChime('slot_alert');
+      triggerHaptic('success');
+    });
+
+    // 5. Listener cuando el usuario toca la notificación en la barra de Android
+    PushNotifications.addListener('pushNotificationActionPerformed', (action: any) => {
+      console.log('[Native FCM] Notificación presionada:', action);
+      const url = action.notification?.data?.url;
+      if (url && typeof window !== 'undefined') {
+        window.location.href = url;
+      }
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('[Native FCM] Error registrando listeners nativos:', err);
+    return false;
+  }
+}
+
 /**
  * Suscribe al usuario a notificaciones Push en este dispositivo
  */
 export async function subscribeUserToPush(): Promise<{ success: boolean; error?: string }> {
-  // A. Si corre en Capacitor Nativo (APK)
+  // A. Flujo Nativo Capacitor (Android APK / iOS)
   if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
-    const PushNotifications = (window as any).Capacitor?.Plugins?.PushNotifications;
+    const PushNotifications = await getCapacitorPush();
+
     if (PushNotifications) {
       try {
+        await setupNativePushListeners();
         const perm = await PushNotifications.requestPermissions();
+
         if (perm.receive === 'granted') {
           await PushNotifications.register();
           triggerHaptic('success');
           playChime('success');
           return { success: true };
         }
-        return { success: false, error: 'Permiso de notificaciones rechazado en el dispositivo.' };
+
+        return {
+          success: false,
+          error: 'Permiso de notificaciones denegado en los ajustes del celular.',
+        };
       } catch (err: any) {
-        return { success: false, error: err?.message || 'Error al solicitar permisos en el APK.' };
+        console.error('[Native Push] Error en requestPermissions:', err);
+        return { success: false, error: err?.message || 'Error al activar notificaciones en Android.' };
       }
     }
 
-    // Si el APK no tiene el plugin nativo compilado
-    triggerHaptic('medium');
-    playChime('slot_alert');
     return {
       success: false,
-      error: 'En esta versión de APK, las notificaciones se reciben en la campana de la app (arriba a la derecha). Para avisos con pantalla apagada podés abrir la app desde Google Chrome.',
+      error: 'El plugin nativo de push no está enlazado en este APK compilado.',
     };
   }
 
-  // B. Si corre en Web / PWA (Safari iOS, Chrome Android, Escritorio)
+  // B. Flujo Web / PWA (Safari iOS 16.4+, Chrome Android, Escritorio)
   const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
   const hasSW = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
   const hasPush = typeof window !== 'undefined' && 'PushManager' in window;
@@ -150,7 +242,7 @@ export async function subscribeUserToPush(): Promise<{ success: boolean; error?:
   if (!hasNotification || !hasSW || !hasPush) {
     return {
       success: false,
-      error: 'Este navegador o WebView no cuenta con soporte para notificaciones del sistema. Todas las novedades podés verlas en el ícono de campana.',
+      error: 'Tu navegador no soporta el estándar de notificaciones Push.',
     };
   }
 
@@ -166,7 +258,6 @@ export async function subscribeUserToPush(): Promise<{ success: boolean; error?:
       };
     }
 
-    // Obtener la clave pública VAPID
     let publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!publicKey) {
       const res = await fetch('/api/push/public-key');
@@ -191,7 +282,6 @@ export async function subscribeUserToPush(): Promise<{ success: boolean; error?:
 
     const platform = detectPlatform();
 
-    // Guardar la suscripción en el backend
     const response = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
