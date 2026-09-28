@@ -19,6 +19,7 @@ on:
       - 'android/**'
       - 'capacitor.config.ts'
       - '.github/workflows/build-android.yml'
+      - 'package.json'
 
 permissions:
   contents: write
@@ -55,11 +56,23 @@ jobs:
       - name: 6. Permisos de ejecución para Gradlew
         run: chmod +x android/gradlew
 
-      - name: 7. Compilar APK (Instalable directo para Android)
+      - name: 7. Configurar versión dinámica
+        id: versioning
+        run: |
+          BUILD_NUM=${{ github.run_number }}
+          VERSION_NAME="1.0.${BUILD_NUM}"
+          VERSION_CODE=$((100 + BUILD_NUM))
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_ENV
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
+          echo "## 🚀 Compilación Android v${VERSION_NAME} (Build Code ${VERSION_CODE})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Name:** \`${VERSION_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version Code:** \`${VERSION_CODE}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 8. Compilar APK (Instalable directo para Android)
         id: gradle_build
         run: |
           cd android
-          ./gradlew assembleDebug --stacktrace 2>&1 | tee ../gradle_build.log
+          ./gradlew assembleDebug -PversionCode=${{ env.VERSION_CODE }} -PversionName="${{ env.VERSION_NAME }}" --stacktrace 2>&1 | tee ../gradle_build.log
 
       - name: Mostrar log si falla en el resumen
         if: failure()
@@ -69,35 +82,36 @@ jobs:
           tail -n 100 gradle_build.log >> $GITHUB_STEP_SUMMARY || true
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      - name: 8. Compilar AAB (Bundle para Google Play Store)
+      - name: 9. Compilar AAB (Bundle para Google Play Store)
         run: |
           cd android
-          ./gradlew bundleRelease || echo "Release bundle opcional sin firma"
+          ./gradlew bundleRelease -PversionCode=${{ env.VERSION_CODE }} -PversionName="${{ env.VERSION_NAME }}" || echo "Release bundle opcional sin firma"
 
-      - name: 9. Preparar artefactos
+      - name: 10. Preparar artefactos
         run: |
           mkdir -p build-artifacts
           if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp android/app/build/outputs/apk/debug/app-debug.apk build-artifacts/PadelSanPedro-v1.0-debug.apk
+            cp android/app/build/outputs/apk/debug/app-debug.apk "build-artifacts/PadelSanPedro-v${{ env.VERSION_NAME }}-debug.apk"
+            cp android/app/build/outputs/apk/debug/app-debug.apk "build-artifacts/PadelSanPedro-latest.apk"
           fi
           if [ -f android/app/build/outputs/bundle/release/app-release.aab ]; then
-            cp android/app/build/outputs/bundle/release/app-release.aab build-artifacts/PadelSanPedro-v1.0-release.aab
+            cp android/app/build/outputs/bundle/release/app-release.aab "build-artifacts/PadelSanPedro-v${{ env.VERSION_NAME }}-release.aab"
           fi
 
-      - name: 10. Subir APK instalable como artefacto
+      - name: 11. Subir APK instalable como artefacto
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: PadelSanPedro-Android-APK
-          path: build-artifacts/PadelSanPedro-v1.0-debug.apk
+          name: PadelSanPedro-v${{ env.VERSION_NAME }}-APK
+          path: build-artifacts/*.apk
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: 11. Subir Log de Gradle como artefacto
+      - name: 12. Subir Log de Gradle como artefacto
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-build-log
+          name: gradle-build-log-v${{ env.VERSION_NAME }}
           path: gradle_build.log
           if-no-files-found: ignore
           retention-days: 7
