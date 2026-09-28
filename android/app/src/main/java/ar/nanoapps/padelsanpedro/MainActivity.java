@@ -10,4 +10,13 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PushNotificationsPlugin.class);
         super.onCreate(savedInstanceState);
     }
+
+    @Override
+    public void onBackPressed() {
+        if (getBridge() != null && getBridge().getWebView() != null && getBridge().getWebView().canGoBack()) {
+            getBridge().getWebView().goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
 }
