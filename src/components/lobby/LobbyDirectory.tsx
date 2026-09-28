@@ -28,7 +28,6 @@ import type { PublicClubCard, HubHighlights } from '@/actions/clubs';
 import { type HubConfig, DEFAULT_HUB_CONFIG } from '@/types/hub-settings';
 import PwaNotificationBell from '@/components/pwa/PwaNotificationBell';
 import HubSplashScreen from './HubSplashScreen';
-import HubNotificationOptIn from './HubNotificationOptIn';
 
 interface LobbyDirectoryProps {
   clubs: PublicClubCard[];
@@ -467,9 +466,6 @@ export default function LobbyDirectory({
             <span className="text-xs text-slate-400 mt-0.5">Circuito San Pedro</span>
           </Link>
         </section>
-
-        {/* 7.5. Alertas de Turnos Liberados Push Opt-In */}
-        <HubNotificationOptIn accentColor={accent} />
 
         {/* 8. Directory Header, Search & Filters */}
         <section id="complejos" className="space-y-4 pt-2">

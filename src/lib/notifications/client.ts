@@ -59,6 +59,7 @@ async function getCapacitorPush() {
   if (!isCapacitor) return null;
 
   try {
+    // @ts-ignore
     const { PushNotifications } = await import('@capacitor/push-notifications');
     return PushNotifications;
   } catch {
@@ -327,6 +328,45 @@ export async function unsubscribeUserFromPush(): Promise<{ success: boolean }> {
   } catch (e) {
     console.error('[NanoNotifications] Error desuscribiendo de push:', e);
     return { success: false };
+  }
+}
+
+/**
+ * Auto-inicializa notificaciones al abrir la app nativa (APK Android o iOS).
+ * Solicita los permisos al sistema operativo automáticamente en cuanto se abre la aplicación,
+ * sin necesidad de botones ni carteles manuales en pantalla.
+ */
+export async function autoInitPushOnAppStart(): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  // Si corre en Capacitor Native (APK Android / iOS)
+  const isCapacitor = Boolean((window as any).Capacitor?.isNativePlatform?.());
+  if (isCapacitor) {
+    try {
+      const PushNotifications = await getCapacitorPush();
+      if (!PushNotifications) return;
+
+      // Registrar listeners para capturar token y eventos
+      await setupNativePushListeners();
+
+      const status = await PushNotifications.checkPermissions();
+
+      // Si ya está concedido, registrar inmediatamente para refrescar token en el backend
+      if (status.receive === 'granted') {
+        await PushNotifications.register();
+        return;
+      }
+
+      // Si aún no se pidió o está en estado de solicitud, mostrar el cartel nativo del sistema operativo
+      if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale' || !status.receive) {
+        const req = await PushNotifications.requestPermissions();
+        if (req.receive === 'granted') {
+          await PushNotifications.register();
+        }
+      }
+    } catch (e) {
+      console.warn('[Push AutoInit] Error en inicialización automática nativa:', e);
+    }
   }
 }
 
