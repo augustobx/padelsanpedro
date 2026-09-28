@@ -4,7 +4,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import '@/app/globals.css';
 import ConnectivityStatus from '@/components/ConnectivityStatus';
-import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { prisma } from '@/lib/prisma';
 
 const geistSans = Geist({
@@ -80,7 +79,6 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-slate-950">
         <ConnectivityStatus />
-        <PwaInstallPrompt />
         {children}
       </body>
     </html>
