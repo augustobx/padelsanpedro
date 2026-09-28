@@ -387,26 +387,18 @@ export default function HubSettingsForm({ initialConfig }: HubSettingsFormProps)
             {/* If Splash is active in simulator */}
             {isPreviewingSplash && config.splashEnabled ? (
               <div 
-                className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center transition-all ${
-                  config.splashStyle === 'cinematic' 
-                    ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950' 
-                    : config.splashStyle === 'minimal-modern'
-                    ? 'bg-slate-950'
-                    : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950'
-                }`}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 text-center transition-all bg-[#020617]"
               >
                 {/* Glow ring background */}
-                {config.splashStyle === 'neon-glow' && (
-                  <div 
-                    className="absolute w-44 h-44 rounded-full blur-2xl opacity-40 animate-pulse pointer-events-none"
-                    style={{ backgroundColor: config.accentColor }}
-                  />
-                )}
+                <div 
+                  className="absolute w-44 h-44 rounded-full blur-3xl opacity-25 animate-pulse pointer-events-none"
+                  style={{ backgroundColor: config.accentColor }}
+                />
 
                 {/* Badge */}
                 {config.splashBadge && (
                   <span 
-                    className="relative text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full mb-4 border"
+                    className="relative text-[9px] font-black tracking-widest uppercase px-3 py-1 rounded-full mb-5 border shadow-sm"
                     style={{ 
                       color: config.accentColor,
                       borderColor: `${config.accentColor}40`,
@@ -419,42 +411,51 @@ export default function HubSettingsForm({ initialConfig }: HubSettingsFormProps)
 
                 {/* Logo / Badge */}
                 <div 
-                  className={`relative w-20 h-20 rounded-3xl flex items-center justify-center text-4xl shadow-xl mb-4 border transition-transform duration-500 ${
-                    config.splashStyle === 'neon-glow' ? 'animate-bounce' : 'scale-105'
-                  }`}
+                  className="relative w-24 h-24 rounded-[28px] bg-slate-900 border flex items-center justify-center text-4xl shadow-2xl mb-4 transition-transform duration-500 scale-100"
                   style={{
-                    backgroundColor: `${config.accentColor}20`,
-                    borderColor: `${config.accentColor}60`,
-                    boxShadow: `0 0 30px ${config.accentColor}40`,
+                    borderColor: `${config.accentColor}50`,
+                    boxShadow: `0 0 35px ${config.accentColor}30`,
                   }}
                 >
-                  {config.splashLogoUrl.startsWith('http') ? (
-                    <img src={config.splashLogoUrl} alt="Logo" className="w-12 h-12 object-contain" />
+                  {config.splashLogoUrl && (config.splashLogoUrl.startsWith('http') || config.splashLogoUrl.startsWith('/')) ? (
+                    <img src={config.splashLogoUrl} alt="Logo" className="w-16 h-16 object-contain" />
                   ) : (
-                    <span>{config.splashLogoUrl || '🎾'}</span>
+                    <svg className="w-14 h-14" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="14" y="6" width="36" height="38" rx="18" stroke={config.accentColor} strokeWidth="3.2" />
+                      <circle cx="26" cy="20" r="1.5" fill="#a7f3d0" />
+                      <circle cx="32" cy="20" r="1.5" fill="#a7f3d0" />
+                      <circle cx="38" cy="20" r="1.5" fill="#a7f3d0" />
+                      <circle cx="29" cy="25" r="1.8" fill="#ffffff" />
+                      <circle cx="35" cy="25" r="1.8" fill="#ffffff" />
+                      <circle cx="32" cy="30" r="1.5" fill="#a7f3d0" />
+                      <path d="M26 43 L32 47.5 L38 43" stroke={config.accentColor} strokeWidth="2.8" strokeLinecap="round" />
+                      <path d="M29.5 47.5 L28 60 C28 61 29 62 30 62 L34 62 C35 62 36 61 36 60 L34.5 47.5 Z" fill="#090d16" stroke={config.accentColor} strokeWidth="2" />
+                      <circle cx="48" cy="14" r="5" fill={config.accentColor} />
+                    </svg>
                   )}
                 </div>
 
                 {/* Title */}
-                <h2 className="text-xl font-black text-white tracking-tight leading-tight">
+                <h2 className="text-lg font-black text-white tracking-tight leading-tight uppercase">
                   {config.splashTitle}
                 </h2>
 
                 {/* Tagline */}
                 {config.splashTagline && (
-                  <p className="text-xs text-slate-400 font-medium mt-1.5 max-w-[200px]">
+                  <p className="text-[11px] text-slate-400 font-medium mt-1.5 max-w-[200px] leading-relaxed">
                     {config.splashTagline}
                   </p>
                 )}
 
                 {/* Progress bar in splash */}
-                <div className="w-24 h-1 bg-slate-800 rounded-full mt-6 overflow-hidden">
+                <div className="w-28 h-1 bg-slate-900 rounded-full mt-6 overflow-hidden border border-slate-800">
                   <div 
                     className="h-full rounded-full transition-all ease-linear"
                     style={{ 
                       width: '100%', 
                       backgroundColor: config.accentColor,
-                      transitionDuration: `${config.splashDuration}ms`
+                      transitionDuration: `${config.splashDuration}ms`,
+                      boxShadow: `0 0 10px ${config.accentColor}`
                     }}
                   />
                 </div>
