@@ -28,6 +28,7 @@ import type { PublicClubCard, HubHighlights } from '@/actions/clubs';
 import { type HubConfig, DEFAULT_HUB_CONFIG } from '@/types/hub-settings';
 import PwaNotificationBell from '@/components/pwa/PwaNotificationBell';
 import HubSplashScreen from './HubSplashScreen';
+import HubNotificationOptIn from './HubNotificationOptIn';
 
 interface LobbyDirectoryProps {
   clubs: PublicClubCard[];
@@ -467,6 +468,9 @@ export default function LobbyDirectory({
           </Link>
         </section>
 
+        {/* 7.5. Alertas de Turnos Liberados Push Opt-In */}
+        <HubNotificationOptIn accentColor={accent} />
+
         {/* 8. Directory Header, Search & Filters */}
         <section id="complejos" className="space-y-4 pt-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -630,6 +634,83 @@ export default function LobbyDirectory({
                           <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                           <span>{club.contactPhone}</span>
                         </p>
+                      )}
+                    </div>
+
+                    {/* Turno Fijo Liberado Highlight */}
+                    {club.liberatedSlots && club.liberatedSlots.length > 0 && (
+                      <div className="rounded-2xl bg-amber-500/10 border border-amber-500/35 p-3 space-y-2 shadow-inner">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-[11px] font-black text-amber-400 uppercase tracking-wider">
+                            <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
+                            ¡Turno Fijo Liberado!
+                          </span>
+                          <span className="text-[10px] font-black text-amber-300 bg-amber-500/25 px-2 py-0.5 rounded-full border border-amber-500/40">
+                            HOY
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-sm font-black text-white block">
+                              {club.liberatedSlots[0].timeStr} hs
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              {club.liberatedSlots[0].courtName}
+                            </span>
+                          </div>
+                          <Link
+                            href={`/club/${club.slug}?slot=${club.liberatedSlots[0].timeStr}`}
+                            className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] uppercase tracking-wide transition-all shadow-md active:scale-95 flex items-center gap-1"
+                          >
+                            <span>Reservar</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Turnos Libres Hoy */}
+                    <div className="space-y-2 pt-1 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                          {club.todayAvailableCount > 0 ? (
+                            <span>
+                              <strong className="text-emerald-400 font-black text-sm">{club.todayAvailableCount}</strong>{' '}
+                              {club.todayAvailableCount === 1 ? 'turno libre hoy' : 'turnos libres hoy'}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500 font-medium">Sin turnos disponibles hoy</span>
+                          )}
+                        </span>
+                        {club.todayAvailableCount > 0 && (
+                          <span className="text-[9px] font-black tracking-widest text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
+                            En Vivo
+                          </span>
+                        )}
+                      </div>
+
+                      {club.upcomingSlots && club.upcomingSlots.length > 0 && (
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                          {club.upcomingSlots.slice(0, 4).map((slotTime) => (
+                            <Link
+                              key={slotTime}
+                              href={`/club/${club.slug}?slot=${slotTime}`}
+                              className="px-2.5 py-1 rounded-xl bg-slate-800/90 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 hover:border-emerald-400 text-xs font-bold border border-slate-700/60 transition-all active:scale-95 whitespace-nowrap shadow-sm"
+                              title={`Reservar turno de las ${slotTime} en ${club.name}`}
+                            >
+                              {slotTime}
+                            </Link>
+                          ))}
+                          {club.upcomingSlots.length > 4 && (
+                            <Link
+                              href={`/club/${club.slug}`}
+                              className="text-[11px] font-bold text-slate-400 hover:text-white px-1.5 py-1 transition-colors whitespace-nowrap"
+                            >
+                              +{club.upcomingSlots.length - 4} más
+                            </Link>
+                          )}
+                        </div>
                       )}
                     </div>
 

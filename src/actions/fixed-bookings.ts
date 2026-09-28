@@ -238,7 +238,7 @@ export async function releaseFixedBookingForDate(data: {
                     clubName: court.tenant?.name || 'Club de San Pedro',
                     dateStr: data.dateStr,
                     timeStr: data.startTimeStr,
-                    url: `/${court.tenant?.slug || ''}`,
+                    url: `/club/${court.tenant?.slug || ''}?slot=${data.startTimeStr}`,
                 }).catch((err) => console.warn('Could not send liberated slot push:', err));
             }
         } catch (e) {

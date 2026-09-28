@@ -3,6 +3,14 @@
 import { platformPrisma } from '@/lib/prisma-core';
 import { cookies } from 'next/headers';
 
+export interface LiberatedSlotInfo {
+  id: string;
+  courtName: string;
+  courtId: string;
+  timeStr: string;
+  endTimeStr: string;
+}
+
 export interface PublicClubCard {
   id: string;
   slug: string;
@@ -14,6 +22,9 @@ export interface PublicClubCard {
   surfaces: string[];
   hasIndoor: boolean;
   status: string;
+  todayAvailableCount: number;
+  upcomingSlots: string[];
+  liberatedSlots: LiberatedSlotInfo[];
 }
 
 export async function getPublicClubs(): Promise<PublicClubCard[]> {
@@ -51,9 +62,169 @@ export async function getPublicClubs(): Promise<PublicClubCard[]> {
       },
     });
 
+    const now = new Date();
+    // Argentina Time (UTC-3)
+    const argDateParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+
+    const year = Number(argDateParts.find((p) => p.type === 'year')?.value);
+    const month = Number(argDateParts.find((p) => p.type === 'month')?.value);
+    const day = Number(argDateParts.find((p) => p.type === 'day')?.value);
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+
+    const startOfDay = new Date(`${dateStr}T00:00:00-03:00`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999-03:00`);
+
+    const allCourtIds = tenants.flatMap((t) => (t.courts || []).map((c) => c.id));
+
+    const [businessHours, existingBookings, releasedBookings, fixedBookings, courtBlocks] = await Promise.all([
+      platformPrisma.businessHour.findMany({
+        where: { courtId: { in: allCourtIds }, dayOfWeek },
+      }),
+      platformPrisma.booking.findMany({
+        where: {
+          courtId: { in: allCourtIds },
+          startTime: { gte: startOfDay, lte: endOfDay },
+          status: { in: ['CONFIRMED', 'PENDING', 'FIXED', 'BLOCKED'] },
+        },
+        select: { courtId: true, startTime: true, endTime: true },
+      }),
+      platformPrisma.booking.findMany({
+        where: {
+          courtId: { in: allCourtIds },
+          startTime: { gte: now, lte: endOfDay },
+          status: 'CANCELLED',
+          fixedBookingId: { not: null },
+        },
+        select: { id: true, courtId: true, startTime: true, endTime: true },
+      }),
+      platformPrisma.fixedBooking.findMany({
+        where: {
+          courtId: { in: allCourtIds },
+          dayOfWeek,
+          isActive: true,
+          startDate: { lte: endOfDay },
+          endDate: { gte: startOfDay },
+        },
+        select: { courtId: true, startTime: true, endTime: true },
+      }),
+      platformPrisma.courtBlock.findMany({
+        where: {
+          courtId: { in: allCourtIds },
+          startTime: { lte: endOfDay },
+          endTime: { gte: startOfDay },
+        },
+        select: { courtId: true, startTime: true, endTime: true },
+      }),
+    ]);
+
     return tenants.map((t) => {
       const courts = t.courts || [];
       const surfaces = Array.from(new Set(courts.map((c) => c.surface).filter(Boolean)));
+
+      let todayAvailableCount = 0;
+      const upcomingSlotsSet = new Set<string>();
+      const liberatedSlots: LiberatedSlotInfo[] = [];
+
+      for (const court of courts) {
+        const bh = businessHours.find((b) => b.courtId === court.id);
+        if (!bh || !bh.openTime || !bh.closeTime) continue;
+
+        const [openH, openM] = bh.openTime.split(':').map(Number);
+        const [closeH, closeM] = bh.closeTime.split(':').map(Number);
+        const duration = bh.slotDuration || 90;
+
+        let currentMins = openH * 60 + openM;
+        let endMins = closeH * 60 + closeM;
+        if (endMins <= currentMins) endMins += 24 * 60;
+
+        while (currentMins + duration <= endMins) {
+          const slotHour = Math.floor(currentMins / 60) % 24;
+          const slotMin = currentMins % 60;
+          const timeStr = `${String(slotHour).padStart(2, '0')}:${String(slotMin).padStart(2, '0')}`;
+
+          const dayOffset = Math.floor(currentMins / (24 * 60));
+          const slotDate = new Date(`${dateStr}T${timeStr}:00-03:00`);
+          if (dayOffset > 0) {
+            slotDate.setDate(slotDate.getDate() + dayOffset);
+          }
+          const slotEndDate = new Date(slotDate.getTime() + duration * 60000);
+
+          // Skip slots that have already started or passed
+          if (slotDate.getTime() <= now.getTime()) {
+            currentMins += duration;
+            continue;
+          }
+
+          // Check if booked
+          const isBooked = existingBookings.some(
+            (b) =>
+              b.courtId === court.id &&
+              new Date(b.startTime).getTime() < slotEndDate.getTime() &&
+              new Date(b.endTime).getTime() > slotDate.getTime()
+          );
+          if (isBooked) {
+            currentMins += duration;
+            continue;
+          }
+
+          // Check if blocked
+          const isBlocked = courtBlocks.some(
+            (cb) =>
+              cb.courtId === court.id &&
+              new Date(cb.startTime).getTime() < slotEndDate.getTime() &&
+              new Date(cb.endTime).getTime() > slotDate.getTime()
+          );
+          if (isBlocked) {
+            currentMins += duration;
+            continue;
+          }
+
+          // Check fixed booking
+          const hasFixed = fixedBookings.some((fb) => {
+            if (fb.courtId !== court.id) return false;
+            const [fbH, fbM] = fb.startTime.split(':').map(Number);
+            return fbH * 60 + fbM === currentMins % (24 * 60);
+          });
+
+          // Check if this fixed booking was released for today
+          const isLiberated = releasedBookings.find(
+            (rb) =>
+              rb.courtId === court.id &&
+              Math.abs(new Date(rb.startTime).getTime() - slotDate.getTime()) < 60000
+          );
+
+          if (hasFixed && !isLiberated) {
+            currentMins += duration;
+            continue;
+          }
+
+          // Available slot!
+          todayAvailableCount++;
+          upcomingSlotsSet.add(timeStr);
+
+          if (isLiberated) {
+            const endHour = Math.floor((currentMins + duration) / 60) % 24;
+            const endMin = (currentMins + duration) % 60;
+            liberatedSlots.push({
+              id: isLiberated.id,
+              courtName: court.name,
+              courtId: court.id,
+              timeStr,
+              endTimeStr: `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`,
+            });
+          }
+
+          currentMins += duration;
+        }
+      }
+
+      const upcomingSlots = Array.from(upcomingSlotsSet).sort((a, b) => a.localeCompare(b));
 
       return {
         id: t.id,
@@ -66,6 +237,9 @@ export async function getPublicClubs(): Promise<PublicClubCard[]> {
         surfaces,
         hasIndoor: surfaces.some((s) => s.toLowerCase().includes('tech') || s.toLowerCase().includes('indoor')),
         status: t.status,
+        todayAvailableCount,
+        upcomingSlots,
+        liberatedSlots,
       };
     });
   } catch (error) {
