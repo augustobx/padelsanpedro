@@ -89,12 +89,14 @@ export default function LobbyDirectory({
       {/* 1. Configurable Splash Screen (Triggered once per session or as configured) */}
       <HubSplashScreen config={hubConfig} />
 
-      {/* 2. Top Header / App Bar */}
-      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 sm:px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+      {/* 2. Top Header / App Bar (Resguardo total contra amontonamientos en móvil) */}
+      <header className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 px-3.5 sm:px-6 py-2.5 sm:py-3">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2.5 sm:gap-4">
+          
+          {/* Brand Left Column */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <div 
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg font-black text-xl shrink-0 transition-transform active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shadow-lg font-black text-lg shrink-0 transition-transform active:scale-95"
               style={{
                 backgroundColor: `${accent}20`,
                 borderColor: `${accent}50`,
@@ -102,9 +104,9 @@ export default function LobbyDirectory({
               }}
             >
               {hubConfig.splashLogoUrl && (hubConfig.splashLogoUrl.startsWith('http') || hubConfig.splashLogoUrl.startsWith('/')) ? (
-                <img src={hubConfig.splashLogoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+                <img src={hubConfig.splashLogoUrl} alt="Logo" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
               ) : hubConfig.splashLogoUrl === 'padel-racket' || !hubConfig.splashLogoUrl ? (
-                <svg className="w-6 h-6" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <ellipse cx="32" cy="25" rx="17" ry="21" stroke={accent} strokeWidth="3" fill={`${accent}18`} />
                   <path d="M32 46 L32 58" stroke="#94a3b8" strokeWidth="4.5" strokeLinecap="round" />
                   <circle cx="28" cy="21" r="1.5" fill={accent} />
@@ -115,47 +117,59 @@ export default function LobbyDirectory({
                   <circle cx="43" cy="36" r="4.5" fill="#facc15" />
                 </svg>
               ) : (
-                <span className="text-lg">{hubConfig.splashLogoUrl}</span>
+                <span className="text-base sm:text-lg">{hubConfig.splashLogoUrl}</span>
               )}
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base sm:text-lg font-black tracking-tight text-white">
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-base sm:text-lg font-black tracking-tight text-white whitespace-nowrap">
                   PADEL<span style={{ color: accent }}>SANPEDRO</span>
                 </span>
+                
+                {/* Badge: En pantallas grandes muestra texto completo; en móvil si es largo muestra OFICIAL con whitespace-nowrap para que JAMÁS se corte en 3 renglones */}
                 <span 
-                  className="text-[9px] font-black px-1.5 py-0.5 rounded-full border uppercase tracking-wider"
+                  className="text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider whitespace-nowrap shrink-0 inline-flex items-center"
                   style={{
                     color: accent,
                     backgroundColor: `${accent}15`,
                     borderColor: `${accent}30`,
                   }}
                 >
-                  {hubConfig.splashBadge || 'HUB'}
+                  <span className="sm:hidden">
+                    {hubConfig.splashBadge?.includes(' ') ? 'OFICIAL' : (hubConfig.splashBadge || 'HUB')}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {hubConfig.splashBadge || 'HUB OFICIAL'}
+                  </span>
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-medium text-slate-400">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-emerald-400 shrink-0" /> San Pedro, Bs. As.
+
+              {/* Subtítulo: 1 sola línea limpia, protegida con whitespace-nowrap */}
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 whitespace-nowrap truncate mt-0.5">
+                <span className="flex items-center gap-1 text-emerald-400 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{clubs.length} clubes online</span>
                 </span>
-                <span className="w-1 h-1 rounded-full bg-slate-700" />
-                <span className="flex items-center gap-1 text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-                  {clubs.length} clubes online
+                <span className="text-slate-700 shrink-0">•</span>
+                <span className="flex items-center gap-1 text-slate-400 truncate">
+                  <MapPin className="w-3 h-3 text-emerald-400 shrink-0" /> San Pedro
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Actions Right Column */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <PwaNotificationBell />
             {session ? (
               <Link
                 href="/perfil"
-                className="flex items-center gap-2.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 rounded-2xl transition-all shadow-sm"
+                className="flex items-center gap-2 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 p-1 sm:px-3 sm:py-1.5 rounded-2xl transition-all shadow-sm shrink-0"
+                title="Mi Perfil"
               >
                 <div 
-                  className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs overflow-hidden border"
+                  className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-xs overflow-hidden border shrink-0"
                   style={{
                     backgroundColor: `${accent}20`,
                     color: accent,
@@ -178,7 +192,7 @@ export default function LobbyDirectory({
             ) : (
               <Link
                 href="/login-usuario"
-                className="text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all shadow-md active:scale-95"
+                className="text-slate-950 font-black text-xs px-3 sm:px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap shrink-0 flex items-center justify-center"
                 style={{
                   backgroundColor: accent,
                   boxShadow: `0 4px 14px ${accent}30`,
