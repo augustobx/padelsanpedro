@@ -1,11 +1,16 @@
 import Link from 'next/link';
-import { ArrowLeft, Sparkles, Smartphone, ShieldCheck } from 'lucide-react';
-import { requirePlatformAdmin } from '@/lib/platform-auth';
+import { redirect } from 'next/navigation';
+import { ArrowLeft, Sparkles, Smartphone } from 'lucide-react';
+import { getPlatformSession } from '@/lib/platform-auth';
 import { getHubConfig } from '@/actions/hub-settings';
 import HubSettingsForm from './HubSettingsForm';
 
 export default async function SuperAdminAppHubPage() {
-  await requirePlatformAdmin();
+  const session = await getPlatformSession();
+  if (!session || session.role !== 'SUPERADMIN') {
+    redirect('/superadmin/login');
+  }
+
   const hubConfig = await getHubConfig();
 
   return (
