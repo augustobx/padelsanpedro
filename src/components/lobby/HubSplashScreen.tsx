@@ -8,16 +8,20 @@ interface HubSplashScreenProps {
 }
 
 export default function HubSplashScreen({ config }: HubSplashScreenProps) {
-  // Synchronous initial state check to prevent any flash of content (FOUC)
   const [status, setStatus] = useState<'showing' | 'exiting' | 'hidden'>(() => {
     if (!config.splashEnabled) return 'hidden';
-    if (typeof window !== 'undefined' && config.splashShowOnce) {
-      try {
-        if (sessionStorage.getItem('psp_hub_splash_seen') === 'true') {
-          return 'hidden';
+    if (typeof window !== 'undefined') {
+      const isForceSplash = window.location.search.includes('splash=true');
+      if (isForceSplash) return 'showing';
+
+      if (config.splashShowOnce) {
+        try {
+          if (sessionStorage.getItem('psp_hub_splash_seen') === 'true') {
+            return 'hidden';
+          }
+        } catch (e) {
+          // sessionStorage disabled or private mode
         }
-      } catch (e) {
-        // sessionStorage disabled or private mode
       }
     }
     return 'showing';
