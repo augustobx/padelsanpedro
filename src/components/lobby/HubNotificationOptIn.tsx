@@ -26,12 +26,18 @@ export default function HubNotificationOptIn({ accentColor = '#10b981' }: HubNot
     setSupported(isSupp);
 
     if (isSupp) {
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied') {
-        setPermissionDenied(true);
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'denied') {
+          setPermissionDenied(true);
+        } else if (Notification.permission === 'granted') {
+          subscribeUserToPush().then((res) => {
+            if (res.success) setIsSubscribed(true);
+          }).catch(() => {});
+        }
       }
 
       getExistingPushSubscription().then((sub) => {
-        setIsSubscribed(!!sub);
+        if (sub) setIsSubscribed(true);
       });
     }
   }, []);

@@ -331,7 +331,7 @@ export default function LobbyDirectory({
                   <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
                     <span className="text-[11px] text-slate-400 font-medium">Hoy en San Pedro</span>
                     <Link
-                      href={`/club/${slot.clubSlug}`}
+                      href={`/club/${slot.clubSlug}?slot=${slot.timeStr}&date=${slot.dateStr}`}
                       className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-amber-500/15 group-hover:scale-105"
                     >
                       Reservar <ArrowRight className="w-3.5 h-3.5" />
@@ -659,7 +659,7 @@ export default function LobbyDirectory({
                             </span>
                           </div>
                           <Link
-                            href={`/club/${club.slug}?slot=${club.liberatedSlots[0].timeStr}`}
+                            href={`/club/${club.slug}?slot=${club.liberatedSlots[0].timeStr}&courtId=${club.liberatedSlots[0].courtId}`}
                             className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] uppercase tracking-wide transition-all shadow-md active:scale-95 flex items-center gap-1"
                           >
                             <span>Reservar</span>

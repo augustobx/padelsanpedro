@@ -91,7 +91,12 @@ export default function BookingFlow({ courts, sysSettings, session, today }: { c
   const bookingFormRef = useRef<HTMLFormElement>(null);
   const retryWhenOnlineRef = useRef(false);
   const completedRef = useRef(false);
-  const [showSplash, setShowSplash] = useState(sysSettings?.pwaEnabled !== false && splashDuration > 0);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('slot=')) {
+      return false; // Skip splash when linking directly to a slot
+    }
+    return sysSettings?.pwaEnabled !== false && splashDuration > 0;
+  });
   const [showBubble, setShowBubble] = useState(sysSettings?.bubbleActive || false);
   const [showFloatingAnnouncement, setShowFloatingAnnouncement] = useState(true);
 
@@ -161,6 +166,33 @@ export default function BookingFlow({ courts, sysSettings, session, today }: { c
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const urlSlot = params.get('slot');
+        const urlCourtId = params.get('courtId');
+        const urlDate = params.get('date');
+
+        if (urlSlot) {
+          const targetDateStr = (urlDate && urlDate >= today) ? urlDate : today;
+          const targetCourt = (urlCourtId && courts.find((c) => c.id === urlCourtId)) || courts[0];
+
+          if (targetCourt) {
+            setSelectedDate(new Date(`${targetDateStr}T12:00:00`));
+            setSelectedCourt(targetCourt.id);
+            setSelectedSlot(urlSlot);
+
+            if (session) {
+              setFormData({
+                name: `${session.name || ''} ${session.lastName || ''}`.trim(),
+                phone: session.phone || '',
+              });
+            }
+
+            setStep(2);
+            setDraftReady(true);
+            return;
+          }
+        }
+
         const raw = window.sessionStorage.getItem(BOOKING_DRAFT_KEY);
         if (raw) {
           const draft = JSON.parse(raw) as { date?: string; courtId?: string; slot?: string; formData?: { name: string; phone: string }; step?: number };
@@ -244,8 +276,8 @@ export default function BookingFlow({ courts, sysSettings, session, today }: { c
           if (!active) return;
           setSlots(res.success && res.data ? res.data as SlotData[] : []);
           if (!res.success) setError(res.error || 'No pudimos consultar los horarios.');
-          if (step !== 3) {
-            setSelectedSlot((current) => res.success && res.data?.some((slot) => slot.time === current && slot.status === 'AVAILABLE') ? current : '');
+          if (step === 1) {
+            setSelectedSlot((current) => res.success && res.data?.some((slot) => slot.time === current && (slot.status === 'AVAILABLE' || slot.isReleased)) ? current : '');
           }
         })
         .catch(() => {

@@ -155,6 +155,38 @@ export default function BookingFlowChat({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const urlSlot = params.get('slot');
+        const urlCourtId = params.get('courtId');
+        const urlDate = params.get('date');
+
+        if (urlSlot) {
+          const targetDate = (urlDate && urlDate >= today) ? urlDate : today;
+          const targetCourt = (urlCourtId && courts.find((c) => c.id === urlCourtId)) || courts[0];
+          if (targetCourt) {
+            setSelectedDate(targetDate);
+            setSelectedSlot(urlSlot);
+            setSelectedCourt(targetCourt.id);
+            if (session) {
+              setFormData({
+                name: `${session.name || ''} ${session.lastName || ''}`.trim(),
+                phone: session.phone || '',
+              });
+            }
+            setMessages([
+              {
+                id: 'url-selected',
+                sender: 'bot',
+                text: `¡Genial! Elegiste el turno de las ${urlSlot} hs (${targetCourt.name}). Ingresá tus datos para confirmarlo:`,
+                kind: 'text',
+              },
+              { id: 'url-form', sender: 'bot', kind: 'form' },
+            ]);
+            draftRestoredRef.current = true;
+            return;
+          }
+        }
+
         const raw = window.sessionStorage.getItem(CHAT_DRAFT_KEY);
         if (!raw) return;
         const draft = JSON.parse(raw) as { date?: string; slot?: string; courtId?: string; formData?: { name: string; phone: string } };
