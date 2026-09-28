@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1097404596464",
+    "project_id": "nanolabs-apps",
+    "storage_bucket": "nanolabs-apps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097404596464:android:59075bfad431483459c235",
+        "android_client_info": {
+          "package_name": "ar.nanoapps.padelsanpedro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7GvhNLkVSGykmQYHCURJq2ekuJhVj4PI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
