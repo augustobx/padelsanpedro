@@ -51,18 +51,22 @@ export function detectPlatform(): PlatformDevice {
 }
 
 /**
- * Verifica si el dispositivo actual soporta notificaciones push
+ * Verifica si el dispositivo actual soporta notificaciones push nativas
  */
 export function isPushSupported(): boolean {
   if (typeof window === 'undefined') return false;
 
-  // Si corre en Capacitor Native
+  // Si corre en Capacitor Native (APK)
   if ((window as any).Capacitor?.isNativePlatform?.()) {
-    return true;
+    return Boolean((window as any).Capacitor?.Plugins?.PushNotifications);
   }
 
   // W3C Web Push (PWA y Navegadores modernos)
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const hasSW = 'serviceWorker' in navigator;
+  const hasPush = 'PushManager' in window;
+  const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
+
+  return hasSW && hasPush && hasNotification;
 }
 
 /**
@@ -96,7 +100,7 @@ export function triggerHaptic(type: 'light' | 'medium' | 'success' | 'warning' =
 export async function getExistingPushSubscription(): Promise<PushSubscription | null> {
   if (!isPushSupported()) return null;
   try {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
       const reg = await navigator.serviceWorker.ready;
       return await reg.pushManager.getSubscription();
     }
@@ -111,18 +115,11 @@ export async function getExistingPushSubscription(): Promise<PushSubscription | 
  * Suscribe al usuario a notificaciones Push en este dispositivo
  */
 export async function subscribeUserToPush(): Promise<{ success: boolean; error?: string }> {
-  if (!isPushSupported()) {
-    return {
-      success: false,
-      error: 'Tu navegador o dispositivo no soporta notificaciones push directas.',
-    };
-  }
-
-  try {
-    // Si corre en Capacitor nativo
-    if ((window as any).Capacitor?.isNativePlatform?.()) {
-      const PushNotifications = (window as any).Capacitor?.Plugins?.PushNotifications;
-      if (PushNotifications) {
+  // A. Si corre en Capacitor Nativo (APK)
+  if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
+    const PushNotifications = (window as any).Capacitor?.Plugins?.PushNotifications;
+    if (PushNotifications) {
+      try {
         const perm = await PushNotifications.requestPermissions();
         if (perm.receive === 'granted') {
           await PushNotifications.register();
@@ -131,11 +128,34 @@ export async function subscribeUserToPush(): Promise<{ success: boolean; error?:
           return { success: true };
         }
         return { success: false, error: 'Permiso de notificaciones rechazado en el dispositivo.' };
+      } catch (err: any) {
+        return { success: false, error: err?.message || 'Error al solicitar permisos en el APK.' };
       }
     }
 
-    // Flujo estándar W3C WebPush (PWA en iOS Safari, Android Chrome, Escritorio)
-    const permission = await Notification.requestPermission();
+    // Si el APK no tiene el plugin nativo compilado
+    triggerHaptic('medium');
+    playChime('slot_alert');
+    return {
+      success: false,
+      error: 'En esta versión de APK, las notificaciones se reciben en la campana de la app (arriba a la derecha). Para avisos con pantalla apagada podés abrir la app desde Google Chrome.',
+    };
+  }
+
+  // B. Si corre en Web / PWA (Safari iOS, Chrome Android, Escritorio)
+  const hasNotification = typeof window !== 'undefined' && 'Notification' in window;
+  const hasSW = typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
+  const hasPush = typeof window !== 'undefined' && 'PushManager' in window;
+
+  if (!hasNotification || !hasSW || !hasPush) {
+    return {
+      success: false,
+      error: 'Este navegador o WebView no cuenta con soporte para notificaciones del sistema. Todas las novedades podés verlas en el ícono de campana.',
+    };
+  }
+
+  try {
+    const permission = await window.Notification.requestPermission();
     if (permission !== 'granted') {
       return {
         success: false,
@@ -201,7 +221,7 @@ export async function subscribeUserToPush(): Promise<{ success: boolean; error?:
 export async function unsubscribeUserFromPush(): Promise<{ success: boolean }> {
   if (!isPushSupported()) return { success: true };
   try {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
       const reg = await navigator.serviceWorker.ready;
       const subscription = await reg.pushManager.getSubscription();
       if (subscription) {

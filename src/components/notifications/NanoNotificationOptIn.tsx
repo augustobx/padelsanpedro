@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, BellRing, CheckCircle2, AlertCircle, Sparkles, Send } from 'lucide-react';
+import { Bell, BellRing, CheckCircle2, AlertCircle, Sparkles, Send, Smartphone } from 'lucide-react';
 import { useNanoNotifications } from '@/lib/notifications/useNanoNotifications';
 
 interface NanoNotificationOptInProps {
@@ -25,6 +25,7 @@ export default function NanoNotificationOptIn({
   } = useNanoNotifications();
 
   const [feedback, setFeedback] = useState<string | null>(null);
+  const isApk = platform === 'ANDROID_NATIVE' || platform === 'IOS_NATIVE';
 
   const handleAction = async () => {
     setFeedback(null);
@@ -60,6 +61,8 @@ export default function NanoNotificationOptIn({
           >
             {isSubscribed ? (
               <BellRing className="w-6 h-6 animate-bounce" />
+            ) : isApk ? (
+              <Smartphone className="w-6 h-6 text-emerald-400" />
             ) : (
               <Bell className="w-6 h-6" />
             )}
@@ -79,7 +82,11 @@ export default function NanoNotificationOptIn({
                 EN VIVO
               </span>
             </div>
-            <p className="text-xs text-slate-400 max-w-lg leading-relaxed">{description}</p>
+            <p className="text-xs text-slate-400 max-w-lg leading-relaxed">
+              {isApk && !isSupported
+                ? 'Las alertas de turnos liberados están disponibles en tiempo real dentro del Centro de Notificaciones (ícono de campana 🔔).'
+                : description}
+            </p>
             {feedback && (
               <p
                 className={`text-xs font-semibold pt-1 flex items-center gap-1.5 ${
@@ -94,59 +101,61 @@ export default function NanoNotificationOptIn({
                 {feedback}
               </p>
             )}
-            {!isSupported && (
-              <p className="text-[11px] text-amber-400/90 pt-0.5">
-                Para recibir avisos push en pantalla apagada en Android/iOS, asegurate de instalar la aplicación en la pantalla de inicio o habilitar los permisos del sitio.
+            {!isSupported && !feedback && (
+              <p className="text-[11px] text-slate-400/90 pt-0.5">
+                {isApk
+                  ? '💡 Tip: Para recibir avisos con pantalla apagada en Android, también podés abrir sppadel.nanoapps.ar desde Google Chrome y tocar "Instalar app".'
+                  : 'Para recibir avisos push en pantalla apagada, asegurate de habilitar los permisos del navegador.'}
               </p>
             )}
           </div>
         </div>
 
         <div className="sm:self-center shrink-0 flex items-center gap-2">
-          {isSubscribed && (
-            <button
-              type="button"
-              onClick={sendTestNotification}
-              disabled={loading}
-              title="Probar notificación en tu dispositivo"
-              className="px-3.5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Probar</span>
-            </button>
-          )}
-
           <button
             type="button"
-            onClick={handleAction}
+            onClick={sendTestNotification}
             disabled={loading}
-            className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 ${
-              isSubscribed
-                ? 'bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700/80 hover:text-white'
-                : 'text-slate-950 hover:brightness-105'
-            }`}
-            style={{
-              backgroundColor: isSubscribed ? undefined : accentColor,
-              boxShadow: isSubscribed ? undefined : `0 4px 20px ${accentColor}35`,
-            }}
+            title="Probar sonido y vibración"
+            className="px-3.5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95"
           >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Configurando...
-              </span>
-            ) : isSubscribed ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Alertas Activadas</span>
-              </>
-            ) : (
-              <>
-                <BellRing className="w-4 h-4" />
-                <span>Activar Alertas</span>
-              </>
-            )}
+            <Send className="w-3.5 h-3.5" />
+            <span>Probar Alerta</span>
           </button>
+
+          {!isApk || isSupported ? (
+            <button
+              type="button"
+              onClick={handleAction}
+              disabled={loading}
+              className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 ${
+                isSubscribed
+                  ? 'bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700/80 hover:text-white'
+                  : 'text-slate-950 hover:brightness-105'
+              }`}
+              style={{
+                backgroundColor: isSubscribed ? undefined : accentColor,
+                boxShadow: isSubscribed ? undefined : `0 4px 20px ${accentColor}35`,
+              }}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Configurando...
+                </span>
+              ) : isSubscribed ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Alertas Activadas</span>
+                </>
+              ) : (
+                <>
+                  <BellRing className="w-4 h-4" />
+                  <span>Activar Alertas</span>
+                </>
+              )}
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

@@ -159,32 +159,48 @@ export default function NanoNotificationBell({
 
           {/* Banner de estado Push */}
           <div className="px-4 py-2.5 bg-slate-900/30 border-b border-slate-800/60 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isSubscribed ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
-                }`}
-              />
-              <span className="text-slate-300 text-[11px] font-medium">
-                {isSubscribed ? 'Alertas push activadas' : 'Alertas push inactivas'}
-              </span>
-            </div>
+            {platform === 'ANDROID_NATIVE' && !isSupported ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-slate-300 text-[11px] font-medium">
+                    Avisos en vivo en la App
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg font-bold">
+                  APK
+                </span>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isSubscribed ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'
+                    }`}
+                  />
+                  <span className="text-slate-300 text-[11px] font-medium">
+                    {isSubscribed ? 'Alertas push activadas' : 'Alertas push inactivas'}
+                  </span>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={togglePush}
-                disabled={loading}
-                className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors border"
-                style={{
-                  backgroundColor: isSubscribed ? 'transparent' : `${accentColor}20`,
-                  color: isSubscribed ? '#94a3b8' : accentColor,
-                  borderColor: isSubscribed ? '#334155' : `${accentColor}50`,
-                }}
-              >
-                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : isSubscribed ? 'Desactivar' : 'Activar'}
-              </button>
-            </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={togglePush}
+                    disabled={loading}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors border"
+                    style={{
+                      backgroundColor: isSubscribed ? 'transparent' : `${accentColor}20`,
+                      color: isSubscribed ? '#94a3b8' : accentColor,
+                      borderColor: isSubscribed ? '#334155' : `${accentColor}50`,
+                    }}
+                  >
+                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : isSubscribed ? 'Desactivar' : 'Activar'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Filtros */}
