@@ -51,19 +51,51 @@ export function detectPlatform(): PlatformDevice {
 }
 
 /**
+ * Espera de forma asíncrona a que el puente nativo de Capacitor esté inyectado en el WebView
+ */
+export async function waitForCapacitor(timeoutMs = 4000): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if ((window as any).Capacitor?.isNativePlatform?.()) return true;
+
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 80));
+    if ((window as any).Capacitor?.isNativePlatform?.()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Helper dinámico para obtener el plugin de PushNotifications de Capacitor
  */
 async function getCapacitorPush() {
   if (typeof window === 'undefined') return null;
-  const isCapacitor = Boolean((window as any).Capacitor?.isNativePlatform?.());
-  if (!isCapacitor) return null;
+  const isNative = await waitForCapacitor(4000);
+  if (!isNative) return null;
 
+  // 1. Probar plugin inyectado directamente en window.Capacitor.Plugins
+  const plugins = (window as any).Capacitor?.Plugins;
+  if (plugins?.PushNotifications) {
+    return plugins.PushNotifications;
+  }
+
+  // 2. Registrar el plugin con Capacitor Core
+  try {
+    // @ts-ignore
+    const { registerPlugin } = await import('@capacitor/core');
+    const Push = registerPlugin('PushNotifications');
+    if (Push) return Push;
+  } catch {}
+
+  // 3. Fallback a importación dinámica
   try {
     // @ts-ignore
     const { PushNotifications } = await import('@capacitor/push-notifications');
     return PushNotifications;
   } catch {
-    return (window as any).Capacitor?.Plugins?.PushNotifications || null;
+    return null;
   }
 }
 
@@ -339,34 +371,38 @@ export async function unsubscribeUserFromPush(): Promise<{ success: boolean }> {
 export async function autoInitPushOnAppStart(): Promise<void> {
   if (typeof window === 'undefined') return;
 
-  // Si corre en Capacitor Native (APK Android / iOS)
-  const isCapacitor = Boolean((window as any).Capacitor?.isNativePlatform?.());
-  if (isCapacitor) {
-    try {
-      const PushNotifications = await getCapacitorPush();
-      if (!PushNotifications) return;
+  // 1. Esperar a que el puente nativo de Capacitor esté listo
+  const isCapacitor = await waitForCapacitor(4000);
+  if (!isCapacitor) {
+    return;
+  }
 
-      // Registrar listeners para capturar token y eventos
-      await setupNativePushListeners();
-
-      const status = await PushNotifications.checkPermissions();
-
-      // Si ya está concedido, registrar inmediatamente para refrescar token en el backend
-      if (status.receive === 'granted') {
-        await PushNotifications.register();
-        return;
-      }
-
-      // Si aún no se pidió o está en estado de solicitud, mostrar el cartel nativo del sistema operativo
-      if (status.receive === 'prompt' || status.receive === 'prompt-with-rationale' || !status.receive) {
-        const req = await PushNotifications.requestPermissions();
-        if (req.receive === 'granted') {
-          await PushNotifications.register();
-        }
-      }
-    } catch (e) {
-      console.warn('[Push AutoInit] Error en inicialización automática nativa:', e);
+  try {
+    const PushNotifications = await getCapacitorPush();
+    if (!PushNotifications) {
+      console.warn('[Push AutoInit] Plugin PushNotifications no disponible en Capacitor');
+      return;
     }
+
+    // 2. Registrar listeners para capturar token FCM y eventos de deep link
+    await setupNativePushListeners();
+
+    // 3. Comprobar permisos
+    let status = await PushNotifications.checkPermissions().catch(() => null);
+
+    // 4. Si ya está concedido, registrar inmediatamente para sincronizar token FCM
+    if (status?.receive === 'granted') {
+      await PushNotifications.register();
+      return;
+    }
+
+    // 5. Si no está concedido, solicitar permisos al sistema operativo Android / iOS
+    const req = await PushNotifications.requestPermissions();
+    if (req?.receive === 'granted') {
+      await PushNotifications.register();
+    }
+  } catch (e) {
+    console.error('[Push AutoInit] Error en inicialización automática nativa:', e);
   }
 }
 

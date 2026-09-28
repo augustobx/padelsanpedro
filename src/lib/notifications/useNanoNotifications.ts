@@ -9,6 +9,7 @@ import {
   triggerHaptic,
   detectPlatform,
   setupNativePushListeners,
+  waitForCapacitor,
 } from './client';
 import { playChime } from './sound';
 import { InAppNotificationItem, PlatformDevice } from './types';
@@ -46,15 +47,19 @@ export function useNanoNotifications() {
     const plat = detectPlatform();
     setPlatform(plat);
 
-    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
-      setupNativePushListeners().then((ok) => {
-        if (ok) setIsSubscribed(true);
-      });
-    } else if (supp) {
-      getExistingPushSubscription().then((sub) => {
-        setIsSubscribed(Boolean(sub));
-      });
-    }
+    waitForCapacitor(3000).then((isNative) => {
+      if (isNative) {
+        setIsSupported(true);
+        setPlatform('ANDROID_NATIVE');
+        setupNativePushListeners().then((ok) => {
+          if (ok) setIsSubscribed(true);
+        });
+      } else if (supp) {
+        getExistingPushSubscription().then((sub) => {
+          setIsSubscribed(Boolean(sub));
+        });
+      }
+    });
 
     fetchNotifications();
 
