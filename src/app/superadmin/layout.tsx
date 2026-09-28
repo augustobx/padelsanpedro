@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Building2, CheckCircle2, LayoutDashboard, Layers, LogOut, Shield } from 'lucide-react';
+import { Building2, CheckCircle2, LayoutDashboard, Layers, LogOut, Shield, Sparkles } from 'lucide-react';
 import { getPlatformSession } from '@/lib/platform-auth';
 import { isPlatformRequest } from '@/lib/tenant-context';
 import { superAdminLogout } from '@/actions/superadmin';
@@ -22,6 +22,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
             <Link href="/superadmin" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2"><LayoutDashboard className="w-4 h-4 text-indigo-400" />Métricas</Link>
             <Link href="/superadmin/tenants" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2"><Building2 className="w-4 h-4 text-cyan-400" />Clubes / Tenants</Link>
             <Link href="/superadmin/planes" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2"><Layers className="w-4 h-4 text-emerald-400" />Planes SaaS</Link>
+            <Link href="/superadmin/app-hub" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-400" />App Hub & Splash</Link>
           </nav>
         </div>
         <div className="flex items-center gap-4">

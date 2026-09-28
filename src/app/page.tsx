@@ -20,6 +20,7 @@ import CommunityFeedTicker from "@/components/community/CommunityFeedTicker";
 import { hasTenantFeature } from "@/lib/features";
 
 import { getPublicClubs, getHubHighlights } from "@/actions/clubs";
+import { getHubConfig } from "@/actions/hub-settings";
 import LobbyDirectory from "@/components/lobby/LobbyDirectory";
 
 export default async function HomePage() {
@@ -39,10 +40,11 @@ export default async function HomePage() {
 
     // Si es la plataforma o el portal general de Padel San Pedro, renderizamos el Lobby
     if (isPlatform || !tenant) {
-        const [clubs, session, hubHighlights] = await Promise.all([
+        const [clubs, session, hubHighlights, hubConfig] = await Promise.all([
             getPublicClubs(),
             getUserSession(),
             getHubHighlights(),
+            getHubConfig(),
         ]);
 
         return (
@@ -50,6 +52,7 @@ export default async function HomePage() {
                 clubs={clubs}
                 session={session}
                 hubHighlights={hubHighlights}
+                hubConfig={hubConfig}
             />
         );
     }

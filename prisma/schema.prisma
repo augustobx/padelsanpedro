@@ -1047,3 +1047,16 @@ model OpenMatchPlayer {
   @@index([tenantId], map: "OpenMatchPlayer_tenant_idx")
   @@map("openmatchplayer")
 }
+
+// ==========================================
+// CONFIGURACIÓN DE PLATAFORMA Y APP HUB
+// ==========================================
+model HubSetting {
+  id         String   @id @default(uuid())
+  settingKey String   @unique(map: "HubSetting_settingKey_key") @db.VarChar(100)
+  value      String   @db.Text
+  updatedAt  DateTime @updatedAt
+
+  @@map("hubsetting")
+}
+

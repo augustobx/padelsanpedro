@@ -99,9 +99,22 @@ export interface LiberatedTurnoAlert {
   originalClient?: string;
 }
 
+export interface OpenMatchHighlight {
+  id: string;
+  clubName: string;
+  courtName: string;
+  dateStr: string;
+  startTime: string;
+  level: string | null;
+  slotsNeeded: number;
+  creatorName: string;
+}
+
 export interface HubHighlights {
   liberatedSlotsToday: LiberatedTurnoAlert[];
   todayAvailableCount: number;
+  openMatchesCount: number;
+  activeOpenMatches: OpenMatchHighlight[];
 }
 
 export async function getHubHighlights(): Promise<HubHighlights> {
@@ -205,16 +218,56 @@ export async function getHubHighlights(): Promise<HubHighlights> {
     });
     const estimatedAvailable = Math.max(0, (totalActiveCourts * 7) - totalBookedToday);
 
+    // 4. Buscar convocatorias y partidos abiertos activos para el radar del Hub
+    let activeOpenMatches: OpenMatchHighlight[] = [];
+    let openMatchesCount = 0;
+    try {
+      const openMatchesData = await platformPrisma.openMatch.findMany({
+        where: {
+          status: 'OPEN',
+          date: { gte: startOfToday },
+        },
+        include: {
+          creator: { select: { name: true, lastName: true } },
+          tenant: { select: { name: true, slug: true, systemSetting: { select: { clubName: true } } } },
+        },
+        orderBy: { date: 'asc' },
+        take: 3,
+      });
+
+      openMatchesCount = await platformPrisma.openMatch.count({
+        where: { status: 'OPEN', date: { gte: startOfToday } },
+      });
+
+      activeOpenMatches = openMatchesData.map((m) => ({
+        id: m.id,
+        clubName: m.tenant?.systemSetting?.clubName || m.tenant?.name || 'Complejo San Pedro',
+        courtName: m.courtName,
+        dateStr: new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', day: 'numeric' }).format(m.date),
+        startTime: m.startTime,
+        level: m.level,
+        slotsNeeded: m.slotsNeeded,
+        creatorName: `${m.creator.name} ${m.creator.lastName || ''}`.trim(),
+      }));
+    } catch (e) {
+      console.warn('Could not query openMatches for hub radar:', e);
+    }
+
     return {
       liberatedSlotsToday: trulyAvailableLiberated,
       todayAvailableCount: estimatedAvailable,
+      openMatchesCount,
+      activeOpenMatches,
     };
   } catch (error) {
     console.error('Error in getHubHighlights:', error);
     return {
       liberatedSlotsToday: [],
       todayAvailableCount: 0,
+      openMatchesCount: 0,
+      activeOpenMatches: [],
     };
   }
 }
+
 
