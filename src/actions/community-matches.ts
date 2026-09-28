@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { readUserSessionId } from '@/lib/user-session';
 import { revalidatePath } from 'next/cache';
 import { requireTenantFeature } from '@/lib/features';
+import { broadcastOpenMatchPush, sendPushToUser } from '@/lib/notifications';
 import type { PreferredPosition, OpenMatchStatus } from '@prisma/client';
 
 export interface OpenMatchCardData {
@@ -400,6 +401,16 @@ export async function createManualOpenMatch(data: {
     revalidatePath('/comunidad');
     revalidatePath('/comunidad/turnos');
 
+    // Notificación Push a todos los jugadores de San Pedro
+    broadcastOpenMatchPush({
+      clubName: openMatch.courtName,
+      category: openMatch.level || undefined,
+      timeStr: openMatch.startTime,
+      dateStr: data.dateStr,
+      missingPlayers: openMatch.slotsNeeded,
+      url: '/comunidad/turnos',
+    }).catch((e) => console.warn('[Push Match] Warning:', e));
+
     return { success: true, matchId: openMatch.id };
   } catch (error) {
     console.error('Error creating manual open match:', error);
@@ -465,6 +476,15 @@ export async function joinOpenMatch(matchId: string) {
           linkUrl: `/comunidad/turnos`,
         },
       });
+
+      // Push nativo al organizador del partido
+      sendPushToUser(match.creatorId, {
+        title: '🎾 ¡Alguien se sumó a tu partido!',
+        body: `${name} se sumó a tu convocatoria para el ${dateFormatted} a las ${match.startTime} hs en ${match.courtName}.`,
+        url: '/comunidad/turnos',
+        type: 'MATCH_ALERT',
+        tag: `match-join-${match.id}`,
+      }).catch((err) => console.warn('[Push Match Join] Warning:', err));
     } catch (e) {
       console.error('Error creating join notification:', e);
     }

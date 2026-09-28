@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { readUserSessionId } from "@/lib/user-session";
 import { requireTenantFeature } from "@/lib/features";
 import { revalidatePath } from "next/cache";
+import { broadcastNewCommunityPostPush, sendPostCommentPush } from "@/lib/notifications";
 
 // ─── Helpers ──────────────────────────────────────────────
 async function requireCommunityUser() {
@@ -77,14 +78,27 @@ export async function createPost(formData: FormData) {
   }
 
   try {
-    await prisma.post.create({
+    const newPost = await prisma.post.create({
       data: {
         authorId: userId,
         content: content || "",
         imageUrl: imageUrl || null,
         type: "PLAYER",
       },
+      include: {
+        author: { select: { name: true, lastName: true } },
+      },
     });
+
+    const authorName = `${newPost.author?.name || 'Un jugador'}${newPost.author?.lastName ? ' ' + newPost.author.lastName : ''}`.trim();
+    const snippet = content ? (content.length > 70 ? content.slice(0, 67) + '...' : content) : 'Compartió una imagen en el muro';
+    broadcastNewCommunityPostPush({
+      authorName,
+      postSnippet: snippet,
+      postId: newPost.id,
+      excludeUserId: userId,
+    }).catch((e) => console.warn('[Push Feed] Warning:', e));
+
     revalidatePath("/comunidad");
     return { success: true };
   } catch (error) {
@@ -187,6 +201,14 @@ export async function addComment(postId: string, formData: FormData) {
             linkUrl: '/comunidad',
           },
         });
+
+        // Push nativo al autor del post
+        sendPostCommentPush({
+          postAuthorId: post.authorId,
+          commenterName: actorName,
+          commentSnippet: `${content.slice(0, 70)}${content.length > 70 ? '...' : ''}`,
+          postId,
+        }).catch((e) => console.warn('[Push Comment] Warning:', e));
       }
     } catch (e) {
       console.error('Error creating comment notification:', e);

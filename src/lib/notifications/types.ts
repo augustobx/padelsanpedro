@@ -5,6 +5,8 @@ export type NanoNotificationType =
   | 'BOOKING_REMINDER'
   | 'ORDER_STATUS'
   | 'MATCH_ALERT'
+  | 'CHAT_MESSAGE'
+  | 'COMMUNITY'
   | 'ANNOUNCEMENT'
   | 'ADMIN_ALERT'
   | 'SYSTEM';

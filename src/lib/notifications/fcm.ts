@@ -162,10 +162,10 @@ export async function sendNativeFcmPush(
                   : {}),
               },
               android: {
-                priority: 'high',
+                priority: 'HIGH',
                 notification: {
                   channel_id: 'liberated_slots',
-                  priority: 'PRIORITY_HIGH',
+                  notification_priority: 'PRIORITY_HIGH',
                   default_sound: true,
                   default_vibrate_timings: true,
                   visibility: 'PUBLIC',
@@ -180,15 +180,16 @@ export async function sendNativeFcmPush(
         const errData = await res.json().catch(() => ({}));
         const errorCode = errData?.error?.details?.[0]?.errorCode || errData?.error?.status;
 
-        if (errorCode === 'UNREGISTERED' || errorCode === 'INVALID_ARGUMENT') {
-          console.log('[FCM v1] Token inválido o app desinstalada, borrando de DB:', fcmToken);
+        // SOLO borrar si Google FCM confirma que el token fue revocado o la app desinstalada
+        if (errorCode === 'UNREGISTERED') {
+          console.log('[FCM v1] Token no registrado o app desinstalada, borrando de DB:', fcmToken);
           if (subId) {
             await platformPrisma.pushSubscription.delete({ where: { id: subId } }).catch(() => {});
           } else {
             await platformPrisma.pushSubscription.deleteMany({ where: { endpoint: fcmToken } }).catch(() => {});
           }
         } else {
-          console.warn('[FCM v1] Error enviando push:', errData);
+          console.warn('[FCM v1] Error enviando push:', JSON.stringify(errData));
         }
         return false;
       } catch (e) {

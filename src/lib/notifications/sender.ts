@@ -309,3 +309,101 @@ export async function sendOrderStatusPush(order: {
     order.tenantId
   );
 }
+
+/**
+ * Helper estandarizado: Mensaje de Chat Privado
+ */
+export async function sendChatMessagePush(params: {
+  recipientUserId: string;
+  senderName: string;
+  messageSnippet: string;
+  conversationId: string;
+  tenantId?: string;
+}) {
+  await sendPushToUser(
+    params.recipientUserId,
+    {
+      title: `💬 Mensaje de ${params.senderName}`,
+      body: params.messageSnippet,
+      url: `/comunidad/chat/${params.conversationId}`,
+      type: 'CHAT_MESSAGE',
+      tag: `chat-${params.conversationId}`,
+    },
+    params.tenantId
+  );
+}
+
+/**
+ * Helper estandarizado: Nueva Publicación en la Comunidad
+ */
+export async function broadcastNewCommunityPostPush(params: {
+  authorName: string;
+  postSnippet: string;
+  postId: string;
+  excludeUserId?: string;
+  tenantId?: string;
+}) {
+  await broadcastPushNotification(
+    {
+      title: `🎾 ${params.authorName} publicó en la comunidad`,
+      body: params.postSnippet || 'Nueva publicación en el muro',
+      url: `/comunidad`,
+      type: 'COMMUNITY',
+      tag: `post-${params.postId}`,
+    },
+    { excludeUserId: params.excludeUserId, tenantId: params.tenantId }
+  );
+}
+
+/**
+ * Helper estandarizado: Comentario en Publicación
+ */
+export async function sendPostCommentPush(params: {
+  postAuthorId: string;
+  commenterName: string;
+  commentSnippet: string;
+  postId: string;
+  tenantId?: string;
+}) {
+  await sendPushToUser(
+    params.postAuthorId,
+    {
+      title: `💬 ${params.commenterName} comentó tu publicación`,
+      body: params.commentSnippet,
+      url: `/comunidad`,
+      type: 'COMMUNITY',
+      tag: `comment-${params.postId}`,
+    },
+    params.tenantId
+  );
+}
+
+/**
+ * Helper estandarizado: Confirmación / Estado de Turno para Jugador
+ */
+export async function sendBookingStatusPush(params: {
+  userId: string;
+  courtName: string;
+  dateStr: string;
+  timeStr: string;
+  status: 'CONFIRMED' | 'CANCELLED' | 'REMINDER';
+  clubName?: string;
+  tenantId?: string;
+}) {
+  const isCancelled = params.status === 'CANCELLED';
+  const title = isCancelled ? `❌ Turno Cancelado` : `✅ Turno Confirmado`;
+  const body = `${params.courtName}${params.clubName ? ` • ${params.clubName}` : ''} para el ${params.dateStr} a las ${params.timeStr} hs.`;
+
+  await sendPushToUser(
+    params.userId,
+    {
+      title,
+      body,
+      url: `/mis-turnos`,
+      type: isCancelled ? 'BOOKING_CANCELLED' : 'BOOKING_CONFIRMED',
+      tag: `booking-${params.dateStr}-${params.timeStr}`,
+    },
+    params.tenantId
+  );
+}
+

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { readUserSessionId } from "@/lib/user-session";
 import { requireTenantFeature } from "@/lib/features";
 import { revalidatePath } from "next/cache";
+import { sendChatMessagePush } from "@/lib/notifications";
 
 // ─── Helpers ──────────────────────────────────────────────
 async function requireChatUser() {
@@ -327,6 +328,14 @@ export async function sendMessage(
             linkUrl: `/comunidad/chat/${conversationId}`,
           },
         });
+
+        // Push nativo al celular del destinatario
+        sendChatMessagePush({
+          recipientUserId: other.userId,
+          senderName,
+          messageSnippet: snippet,
+          conversationId,
+        }).catch((e) => console.warn('[Push Chat] Warning:', e));
       }
     } catch (notifErr) {
       console.warn("Could not create chat notifications:", notifErr);
