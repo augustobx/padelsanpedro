@@ -532,9 +532,9 @@ export default function BookingFlow({ courts, sysSettings, session, today }: { c
             {/* Canchas */}
             <div className="space-y-3">
               <label className="text-sm font-bold text-[var(--foreground)] flex items-center">
-                <MapPin className="w-4 h-4 mr-2 text-[var(--color-primary)]" /> Elegí tu cancha
+                <MapPin className="w-4 h-4 mr-2 text-[var(--color-primary)] shrink-0" /> Elegí tu cancha
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {courts.map(court => (
                   <button
                     key={court.id}
@@ -544,13 +544,26 @@ export default function BookingFlow({ courts, sysSettings, session, today }: { c
                       setError('');
                       setSlotsLoading(true);
                     }}
-                    className={`p-4 rounded-2xl text-left transition-all border shadow-sm flex flex-col active:scale-[0.98] ${selectedCourt === court.id
-                      ? 'bg-[var(--color-primary)] border-[var(--color-primary)] ring-2 ring-[var(--color-primary)] text-[var(--color-primary-foreground)] transform scale-[1.02]'
+                    className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all border shadow-sm flex items-center justify-between active:scale-[0.98] ${selectedCourt === court.id
+                      ? 'bg-[var(--color-primary)] border-[var(--color-primary)] ring-2 ring-[var(--color-primary)] text-[var(--color-primary-foreground)] transform scale-[1.01]'
                       : 'bg-[var(--card)] text-[var(--card-foreground)] border-[var(--border)] hover:border-[var(--color-primary)]/60'
                       }`}
                   >
-                    <span className="font-bold text-base">{court.name}</span>
-                    <span className="text-[11px] uppercase opacity-60 mt-1 font-bold">{court.surface || 'Piso Sintético'}</span>
+                    <div className="min-w-0 flex-1 mr-2">
+                      <span className="font-bold text-sm sm:text-base block truncate">{court.name}</span>
+                      <span className="text-[11px] uppercase opacity-70 mt-0.5 font-bold block truncate">{court.surface || 'Piso Sintético'}</span>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${
+                      selectedCourt === court.id
+                        ? 'bg-white text-slate-950 border-white shadow-xs'
+                        : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                    }`}>
+                      {selectedCourt === court.id ? (
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-600" />
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>

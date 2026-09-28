@@ -612,8 +612,8 @@ export default function LobbyDirectory({
                   {/* Card Body */}
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                     <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <h3 className="text-lg font-black text-white group-hover:text-emerald-300 transition-colors line-clamp-1 truncate" title={club.name}>
                           {club.name}
                         </h3>
                       </div>
@@ -646,20 +646,20 @@ export default function LobbyDirectory({
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <span className="text-sm font-black text-white block">
                               {club.liberatedSlots[0].timeStr} hs
                             </span>
-                            <span className="text-[11px] text-slate-400 font-medium">
+                            <span className="text-[11px] text-slate-400 font-medium truncate block">
                               {club.liberatedSlots[0].courtName}
                             </span>
                           </div>
                           <Link
                             href={`/club/${club.slug}?slot=${club.liberatedSlots[0].timeStr}&courtId=${club.liberatedSlots[0].courtId}`}
-                            className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] uppercase tracking-wide transition-all shadow-md active:scale-95 flex items-center gap-1"
+                            className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] uppercase tracking-wide transition-all shadow-md active:scale-95 flex items-center gap-1 shrink-0"
                           >
                             <span>Reservar</span>
-                            <ArrowRight className="w-3 h-3" />
+                            <ArrowRight className="w-3 h-3 shrink-0" />
                           </Link>
                         </div>
                       </div>
@@ -711,13 +711,13 @@ export default function LobbyDirectory({
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2.5 pt-2 border-t border-slate-800/60">
                       {club.contactPhone && (
                         <a
                           href={`https://wa.me/${club.contactPhone.replace(/\D/g, '')}?text=Hola,%20contacto%20desde%20la%20App%20PadelSanPedro`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white p-3 rounded-2xl border border-slate-700/80 transition-all shrink-0 active:scale-95"
+                          className="h-12 w-12 bg-slate-800/90 hover:bg-slate-750 text-slate-300 hover:text-white rounded-2xl border border-slate-700/80 transition-all shrink-0 active:scale-95 flex items-center justify-center shadow-sm"
                           title="WhatsApp del Club"
                         >
                           <Phone className="w-4 h-4 text-emerald-400" />
@@ -726,14 +726,14 @@ export default function LobbyDirectory({
 
                       <Link
                         href={`/club/${club.slug}`}
-                        className="flex-1 text-slate-950 font-black py-3 px-4 rounded-2xl transition-all flex items-center justify-center gap-2 group/btn shadow-md active:scale-[0.98]"
+                        className="flex-1 h-12 text-slate-950 font-black px-4 rounded-2xl transition-all flex items-center justify-center gap-2 group/btn shadow-md active:scale-[0.98] min-w-0"
                         style={{
                           backgroundColor: accent,
                           boxShadow: `0 4px 16px ${accent}25`,
                         }}
                       >
-                        <span>Ver Canchas y Turnos</span>
-                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                        <span className="truncate">Ver Canchas y Turnos</span>
+                        <ArrowRight className="w-4 h-4 shrink-0 group-hover/btn:translate-x-1 transition-transform" />
                       </Link>
                     </div>
                   </div>

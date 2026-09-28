@@ -130,12 +130,12 @@ export default async function ClubPage({ params }: ClubPageProps) {
       <div className="relative flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-[var(--card,#ffffff)] text-[var(--card-foreground,#0f172a)] md:h-[calc(100dvh-2rem)] md:max-h-[860px] md:min-h-0 md:rounded-[2.5rem] md:border md:border-[var(--border,#e2e8f0)] md:shadow-2xl transition-colors duration-300">
         
         {/* Barra superior de retorno al Lobby de Padel San Pedro */}
-        <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-xs font-semibold shrink-0 z-40 border-b border-slate-800">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4 text-emerald-400" />
+        <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-xs font-semibold shrink-0 z-40 border-b border-slate-800 gap-2">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors shrink-0">
+            <ArrowLeft className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>PadelSanPedro</span>
           </Link>
-          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold text-[11px] truncate max-w-[180px]">
+          <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold text-[11px] truncate max-w-[150px] sm:max-w-[220px] shrink-0 text-right">
             {settings?.clubName || 'Club'}
           </span>
         </div>
