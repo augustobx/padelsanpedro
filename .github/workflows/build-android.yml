@@ -58,7 +58,7 @@ jobs:
       - name: 7. Compilar APK (Instalable directo para Android)
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: 8. Compilar AAB (Bundle para Google Play Store)
         run: |
