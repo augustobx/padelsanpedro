@@ -79,6 +79,8 @@ services:
       TENANT_BASE_DOMAIN: ${TENANT_BASE_DOMAIN:?TENANT_BASE_DOMAIN is required}
       NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?NEXT_SERVER_ACTIONS_ENCRYPTION_KEY is required}
       TZ: ${TZ:-America/Argentina/Buenos_Aires}
+    volumes:
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
     healthcheck:
       test:
         [

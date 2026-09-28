@@ -40,6 +40,33 @@ function getFirebaseCredentials(): {
     }
   }
 
+  // Comprobar archivo firebase-service-account.json en disco
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const possiblePaths = [
+      '/app/firebase-service-account.json',
+      path.join(process.cwd(), 'firebase-service-account.json'),
+      path.join(process.cwd(), '..', 'firebase-service-account.json'),
+    ];
+
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        const fileContent = fs.readFileSync(p, 'utf8');
+        const parsed = JSON.parse(fileContent);
+        return {
+          serviceAccount: {
+            project_id: parsed.project_id || projectId || '',
+            client_email: parsed.client_email || '',
+            private_key: parsed.private_key || '',
+          },
+          projectId: parsed.project_id || projectId,
+          serverKey,
+        };
+      }
+    }
+  } catch {}
+
   return { serverKey, projectId };
 }
 
