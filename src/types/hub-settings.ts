@@ -17,7 +17,7 @@ export const DEFAULT_HUB_CONFIG: HubConfig = {
   splashTitle: 'PADEL SAN PEDRO',
   splashTagline: 'La red oficial de canchas y partidos de San Pedro',
   splashBadge: 'APP HUB OFICIAL',
-  splashLogoUrl: '🎾',
+  splashLogoUrl: 'padel-racket',
   splashStyle: 'neon-glow',
   splashDuration: 2000,
   splashShowOnce: true,

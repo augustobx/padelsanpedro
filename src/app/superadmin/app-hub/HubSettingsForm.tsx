@@ -67,6 +67,8 @@ export default function HubSettingsForm({ initialConfig }: HubSettingsFormProps)
         if (res.success) {
           setSavedSuccess(true);
           setTimeout(() => setSavedSuccess(false), 4000);
+        } else {
+          setErrorMessage(res.error || 'Error al guardar los ajustes del Hub');
         }
       } catch (err: any) {
         setErrorMessage(err?.message || 'Error al guardar los ajustes del Hub');

@@ -101,10 +101,21 @@ export default function LobbyDirectory({
                 boxShadow: `0 4px 16px ${accent}25`,
               }}
             >
-              {hubConfig.splashLogoUrl && hubConfig.splashLogoUrl.startsWith('http') ? (
+              {hubConfig.splashLogoUrl && (hubConfig.splashLogoUrl.startsWith('http') || hubConfig.splashLogoUrl.startsWith('/')) ? (
                 <img src={hubConfig.splashLogoUrl} alt="Logo" className="w-6 h-6 object-contain" />
+              ) : hubConfig.splashLogoUrl === 'padel-racket' || !hubConfig.splashLogoUrl ? (
+                <svg className="w-6 h-6" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <ellipse cx="32" cy="25" rx="17" ry="21" stroke={accent} strokeWidth="3" fill={`${accent}18`} />
+                  <path d="M32 46 L32 58" stroke="#94a3b8" strokeWidth="4.5" strokeLinecap="round" />
+                  <circle cx="28" cy="21" r="1.5" fill={accent} />
+                  <circle cx="36" cy="21" r="1.5" fill={accent} />
+                  <circle cx="32" cy="27" r="1.5" fill={accent} />
+                  <circle cx="28" cy="33" r="1.5" fill={accent} />
+                  <circle cx="36" cy="33" r="1.5" fill={accent} />
+                  <circle cx="43" cy="36" r="4.5" fill="#facc15" />
+                </svg>
               ) : (
-                <span>{hubConfig.splashLogoUrl || '🎾'}</span>
+                <span className="text-lg">{hubConfig.splashLogoUrl}</span>
               )}
             </div>
             <div>

@@ -37,57 +37,62 @@ export async function getHubConfig(): Promise<HubConfig> {
   }
 }
 
-export async function saveHubConfig(formData: FormData) {
-  const actor = await requirePlatformAdmin();
+export async function saveHubConfig(formData: FormData): Promise<{ success: boolean; error?: string }> {
+  try {
+    const actor = await requirePlatformAdmin();
 
-  const splashEnabled = formData.get('splashEnabled') === 'on' || formData.get('splashEnabled') === 'true';
-  const splashTitle = z.string().trim().min(2).max(80).parse(formData.get('splashTitle') || DEFAULT_HUB_CONFIG.splashTitle);
-  const splashTagline = z.string().trim().max(160).parse(formData.get('splashTagline') || '');
-  const splashBadge = z.string().trim().max(50).parse(formData.get('splashBadge') || '');
-  const splashLogoUrl = z.string().trim().max(500).parse(formData.get('splashLogoUrl') || '🎾');
-  const splashStyle = z.enum(['neon-glow', 'minimal-modern', 'cinematic']).parse(formData.get('splashStyle') || 'neon-glow');
-  const splashDuration = Math.min(5000, Math.max(800, Number(formData.get('splashDuration') || 2000)));
-  const splashShowOnce = formData.get('splashShowOnce') === 'on' || formData.get('splashShowOnce') === 'true';
-  const heroNoticeText = z.string().trim().max(255).parse(formData.get('heroNoticeText') || '');
-  const heroNoticeActive = formData.get('heroNoticeActive') === 'on' || formData.get('heroNoticeActive') === 'true';
-  const accentColor = z.string().trim().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/).parse(formData.get('accentColor') || '#10b981');
+    const splashEnabled = formData.get('splashEnabled') === 'on' || formData.get('splashEnabled') === 'true';
+    const splashTitle = z.string().trim().min(2).max(80).parse(formData.get('splashTitle') || DEFAULT_HUB_CONFIG.splashTitle);
+    const splashTagline = z.string().trim().max(160).parse(formData.get('splashTagline') || '');
+    const splashBadge = z.string().trim().max(50).parse(formData.get('splashBadge') || '');
+    const splashLogoUrl = z.string().trim().max(500).parse(formData.get('splashLogoUrl') || 'padel-racket');
+    const splashStyle = z.enum(['neon-glow', 'minimal-modern', 'cinematic']).parse(formData.get('splashStyle') || 'neon-glow');
+    const splashDuration = Math.min(5000, Math.max(800, Number(formData.get('splashDuration') || 2000)));
+    const splashShowOnce = formData.get('splashShowOnce') === 'on' || formData.get('splashShowOnce') === 'true';
+    const heroNoticeText = z.string().trim().max(255).parse(formData.get('heroNoticeText') || '');
+    const heroNoticeActive = formData.get('heroNoticeActive') === 'on' || formData.get('heroNoticeActive') === 'true';
+    const accentColor = z.string().trim().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/).parse(formData.get('accentColor') || '#10b981');
 
-  const entries: [string, string][] = [
-    ['splashEnabled', String(splashEnabled)],
-    ['splashTitle', splashTitle],
-    ['splashTagline', splashTagline],
-    ['splashBadge', splashBadge],
-    ['splashLogoUrl', splashLogoUrl],
-    ['splashStyle', splashStyle],
-    ['splashDuration', String(splashDuration)],
-    ['splashShowOnce', String(splashShowOnce)],
-    ['heroNoticeText', heroNoticeText],
-    ['heroNoticeActive', String(heroNoticeActive)],
-    ['accentColor', accentColor],
-  ];
+    const entries: [string, string][] = [
+      ['splashEnabled', String(splashEnabled)],
+      ['splashTitle', splashTitle],
+      ['splashTagline', splashTagline],
+      ['splashBadge', splashBadge],
+      ['splashLogoUrl', splashLogoUrl],
+      ['splashStyle', splashStyle],
+      ['splashDuration', String(splashDuration)],
+      ['splashShowOnce', String(splashShowOnce)],
+      ['heroNoticeText', heroNoticeText],
+      ['heroNoticeActive', String(heroNoticeActive)],
+      ['accentColor', accentColor],
+    ];
 
-  await platformPrisma.$transaction(async (tx: any) => {
-    for (const [settingKey, value] of entries) {
-      await tx.hubSetting.upsert({
-        where: { settingKey },
-        create: { settingKey, value },
-        update: { value },
+    await platformPrisma.$transaction(async (tx: any) => {
+      for (const [settingKey, value] of entries) {
+        await tx.hubSetting.upsert({
+          where: { settingKey },
+          create: { settingKey, value },
+          update: { value },
+        });
+      }
+
+      await tx.platformAuditLog.create({
+        data: {
+          actorId: actor.userId,
+          action: 'HUB_SETTINGS_UPDATED',
+          entityType: 'HubSetting',
+          entityId: 'hub',
+          metadata: { splashEnabled, splashTitle, splashStyle, splashDuration },
+        },
       });
-    }
-
-    await tx.platformAuditLog.create({
-      data: {
-        actorId: actor.userId,
-        action: 'HUB_SETTINGS_UPDATED',
-        entityType: 'HubSetting',
-        entityId: 'hub',
-        metadata: { splashEnabled, splashTitle, splashStyle, splashDuration },
-      },
     });
-  });
 
-  revalidatePath('/');
-  revalidatePath('/superadmin/app-hub');
+    revalidatePath('/');
+    revalidatePath('/superadmin/app-hub');
 
-  return { success: true };
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error saving hub config:', error);
+    return { success: false, error: error?.message || 'Error al guardar la configuración del Hub' };
+  }
 }
